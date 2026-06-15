@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Protocolo de Estoque — Registro</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #f0f1f3;
+    --border: #dde1e7;
+    --text: #1a1d23;
+    --text2: #6b7280;
+    --accent: #2563eb;
+    --accent-h: #1d4ed8;
+    --danger: #dc2626;
+    --success: #16a34a;
+    --warning: #d97706;
+    --tag-bg: #eff6ff;
+    --tag-text: #2563eb;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.06);
+    --radius: 10px;
+  }
+  body.dark {
+    --bg: #0f1117;
+    --surface: #1a1d24;
+    --surface2: #22262f;
+    --border: #2e3340;
+    --text: #e8eaf0;
+    --text2: #8b93a7;
+    --tag-bg: #1e2a47;
+    --tag-text: #93c5fd;
+    --shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 12px rgba(0,0,0,.2);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; transition: background .2s, color .2s; }
+
+  /* TOPBAR */
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .logo { font-weight: 700; font-size: 15px; color: var(--text); }
+  .logo span { color: var(--accent); }
+  .tab-btns { display: flex; gap: 2px; background: var(--surface2); border-radius: 8px; padding: 3px; }
+  .tab-btn { border: none; background: transparent; color: var(--text2); font-size: 13px; font-weight: 500; padding: 5px 14px; border-radius: 6px; cursor: pointer; transition: all .15s; }
+  .tab-btn.active { background: var(--surface); color: var(--accent); box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .theme-btn { border: 1px solid var(--border); background: var(--surface2); color: var(--text2); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; transition: all .15s; }
+  .theme-btn:hover { color: var(--text); }
+  .logout-btn { border: 1px solid var(--border); background: transparent; color: var(--text2); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; transition: all .15s; }
+  .logout-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+  /* PAGES */
+  .page { display: none; max-width: 860px; margin: 0 auto; padding: 24px 20px; }
+  .page.active { display: block; }
+
+  /* LOGIN */
+  #page-login { max-width: 400px; margin: 80px auto; padding: 24px 20px; }
+  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 40px; box-shadow: var(--shadow); text-align: center; }
+  .login-card h2 { font-size: 20px; margin-bottom: 6px; }
+  .login-card p { color: var(--text2); font-size: 13px; margin-bottom: 28px; }
+  .login-card .field { text-align: left; margin-bottom: 16px; }
+  .login-card label { font-size: 12px; font-weight: 600; color: var(--text2); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .login-card input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); color: var(--text); font-size: 14px; outline: none; transition: border .15s; }
+  .login-card input:focus { border-color: var(--accent); }
+  .btn-primary { width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 11px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background .15s; }
+  .btn-primary:hover { background: var(--accent-h); }
+  .login-error { color: var(--danger); font-size: 13px; margin-top: 10px; display: none; }
+
+  /* SECTION TITLES */
+  .section-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .section-title .badge { background: var(--accent); color: #fff; border-radius: 99px; font-size: 11px; padding: 2px 8px; font-weight: 600; }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); margin-bottom: 16px; }
+
+  /* FORM GRID */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-grid .full { grid-column: 1 / -1; }
+  .field label { font-size: 11px; font-weight: 700; color: var(--text2); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .4px; }
+  .field input, .field select, .field textarea { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); color: var(--text); font-size: 13px; outline: none; transition: border .15s; font-family: inherit; }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 70px; }
+  .field select option { background: var(--surface); }
+
+  /* ITENS LIST */
+  .itens-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  .item-row { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; position: relative; }
+  .item-row-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .item-label { font-size: 12px; font-weight: 700; color: var(--accent); }
+  .btn-remove { background: transparent; border: none; color: var(--text2); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; transition: color .15s; }
+  .btn-remove:hover { color: var(--danger); }
+  .btn-add-item { border: 1px dashed var(--border); background: transparent; color: var(--accent); border-radius: 8px; padding: 10px; width: 100%; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-add-item:hover { background: var(--tag-bg); border-color: var(--accent); }
+
+  /* ASSINATURA */
+  .sig-area { border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); position: relative; overflow: hidden; }
+  .sig-area canvas { display: block; width: 100%; height: 160px; cursor: crosshair; touch-action: none; }
+  .sig-actions { display: flex; justify-content: flex-end; padding: 6px 10px; border-top: 1px solid var(--border); }
+  .btn-clear-sig { background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--text2); font-size: 12px; padding: 4px 10px; cursor: pointer; }
+  .sig-placeholder { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--text2); font-size: 12px; pointer-events: none; transition: opacity .2s; }
+
+  /* CONFIRM SECTION */
+  .confirm-section { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+  .confirm-section h4 { font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .itens-preview { display: flex; flex-direction: column; gap: 6px; }
+  .item-preview-row { background: var(--surface); border-radius: 6px; padding: 10px 12px; border-left: 3px solid var(--accent); }
+  .item-preview-row .dest { font-weight: 600; font-size: 13px; }
+  .item-preview-row .desc { color: var(--text2); font-size: 12px; margin-top: 2px; }
+
+  /* BOTOES ACAO */
+  .btn-success { background: var(--success); color: #fff; border: none; border-radius: 8px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+  .btn-success:hover { opacity: .88; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 12px 20px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .15s; }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .row-btns { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* GERENCIAR (rastreio / status) */
+  .filters-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filters-bar input, .filters-bar select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface2); color: var(--text); font-size: 13px; outline: none; }
+  .filters-bar input { flex: 1; min-width: 160px; }
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: var(--surface2); color: var(--text2); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+  .status-badge { display: inline-block; border-radius: 99px; padding: 3px 10px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .status-aguardando { background: #fef3c7; color: #92400e; }
+  .status-enviado { background: #dbeafe; color: #1e40af; }
+  .status-entregue { background: #dcfce7; color: #166534; }
+  .status-problema { background: #fee2e2; color: #991b1b; }
+  body.dark .status-aguardando { background: #3d2c00; color: #fcd34d; }
+  body.dark .status-enviado { background: #1e2f55; color: #93c5fd; }
+  body.dark .status-entregue { background: #14302a; color: #4ade80; }
+  body.dark .status-problema { background: #3b1212; color: #fca5a5; }
+  .inline-input { border: 1px solid var(--border); border-radius: 6px; background: var(--surface2); color: var(--text); padding: 5px 8px; font-size: 12px; width: 140px; outline: none; }
+  .inline-select { border: 1px solid var(--border); border-radius: 6px; background: var(--surface2); color: var(--text); padding: 5px 8px; font-size: 12px; outline: none; cursor: pointer; }
+  .btn-save-row { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; transition: opacity .15s; white-space: nowrap; }
+  .btn-save-row:hover { opacity: .85; }
+  .empty-state { text-align: center; padding: 48px; color: var(--text2); }
+  .empty-state svg { margin-bottom: 12px; opacity: .4; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 500; z-index: 999; opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { background: var(--success); color: #fff; }
+  .toast.error { background: var(--danger); color: #fff; }
+
+  /* STEP INDICATOR */
+  .steps { display: flex; align-items: center; gap: 0; margin-bottom: 24px; }
+  .step { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); }
+  .step.active { color: var(--accent); font-weight: 600; }
+  .step.done { color: var(--success); }
+  .step-dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .step.active .step-dot { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .step.done .step-dot { border-color: var(--success); background: var(--success); color: #fff; }
+  .step-line { flex: 1; height: 1px; background: var(--border); min-width: 20px; }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .tab-btns { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="page-login">
+  <div class="login-card">
+    <h2>🔒 Acesso ao Sistema</h2>
+    <p>Protocolo de Estoque — Registro</p>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="senha-input" placeholder="Digite a senha" onkeydown="if(event.key==='Enter')fazerLogin()">
+    </div>
+    <button class="btn-primary" onclick="fazerLogin()">Entrar</button>
+    <div class="login-error" id="login-error">Senha incorreta.</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo">Protocolo <span>Estoque</span></div>
+      <div class="tab-btns">
+        <button class="tab-btn active" onclick="irPara('registro')">📋 Registro</button>
+        <button class="tab-btn" onclick="irPara('gerenciar')">📦 Gerenciar</button>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="theme-btn" onclick="toggleTema()">🌙 Tema</button>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <!-- REGISTRO PAGE -->
+  <div class="page active" id="page-registro">
+
+    <!-- STEP 1: DADOS GERAIS -->
+    <div id="step1">
+      <div class="steps">
+        <div class="step active"><div class="step-dot">1</div> Dados</div>
+        <div class="step-line"></div>
+        <div class="step"><div class="step-dot">2</div> Itens</div>
+        <div class="step-line"></div>
+        <div class="step"><div class="step-dot">3</div> Assinaturas</div>
+      </div>
+      <div class="card">
+        <div class="section-title">Quem está entregando</div>
+        <div class="form-grid">
+          <div class="field">
+            <label>Funcionário que entregou</label>
+            <select id="funcionario">
+              <option value="">Selecione...</option>
+              <option>ALINE OHANA BRASIL DE SOUZA</option><option>ALVARO COELHO</option><option>AMANDA MENEZES DE OLIVEIRA NASCIMENTO</option><option>ANDRESSA MENDES SANTOS DE SÁ</option><option>ANNE CLÉIA SOUZA DOS SANTOS</option><option>BIANCA ARIELE GÓES SOARES</option><option>CARINE SILVEIRA DIAS DA SILVA</option><option>DANIELA KOPKE DA SILVA</option><option>DIEGO BISPO DOS SANTOS</option><option>EDÉSIO DA CRUZ RODRIGUES FILHO</option><option>EDMILSON GALVÃO DE ARAUJO</option><option>ELAINE ROBERTA ROCHA SILVA</option><option>EMERSON CHAVES SANTOS</option><option>ERALDO PORTUGAL TORRES</option><option>EVERTON KRULL OLIVEIRA DE JESUS</option><option>FILIPE BRITO COSTA</option><option>GABRIELA COUTO GOMES</option><option>GEOVANA SANTOS DE ASSUNÇÃO</option><option>GEOVANE FERREIRA DA PAIXÃO</option><option>ILKELANDISSON SANTOS OLIVEIRA</option><option>JACSON ANSELMO MAGALHAES</option><option>JAMILLE RIBEIRO NASCIMENTO</option><option>JOSE ROBERTO ALVES</option><option>JOSEVAL DA SILVA</option><option>JULIANA BITTENCOURT</option><option>JULIANA SANTOS VIANA</option><option>LAÍS SANTOS DA PAZ CERQUEIRA</option><option>LILIANE JOSÉ DOS SANTOS</option><option>MARCOS RANIERE ARAUJO DOS SANTOS</option><option>MARTA RIBEIRO SALLES ALFAYA</option><option>MATEUS DA CRUZ DE ASSUNÇÃO</option><option>MATHEUS CARVALHO DAS NEVES</option><option>MAURICIO MONNERAT BOTTO</option><option>MICHELLE DA SILVA TOSTA</option><option>MILENA GUIMARÃES DOS SANTOS</option><option>NILMA MOREIRA RIBAMAR</option><option>NOELINTON PAIM DOS SANTOS TORRES</option><option>NÚBIA CRISTINA CRUZ OLIVEIRA</option><option>PATRICIA SILVA DE AGUIAR</option><option>RAILANE SANTOS DA FONSECA</option><option>RAMON SANTANA ELOI</option><option>RAQUEL DOS SANTOS FRANCA TRINDADE</option><option>RACHEL AMORIM ASSUITE</option><option>RODRIGO SILVA PEREIRA</option><option>ROQUE ANDRÉ DA SILVA JR</option><option>RUDÁ RIBEIRO DOS SANTOS</option><option>SABRINA TAVARES RODRIGUES DA SILVA</option><option>SUIANE LOPES SANTA RITA</option><option>THAIS PAIVA SANTA BÁRBARA</option><option>THENSON BRUNO DA PURIFICAÇÃO OLIVEIRA</option><option>VAGNER RODRIGUES GOMES</option><option>VALDIRENE DA SILVA MENESES</option><option>VALTER FREITAS DOS SANTOS</option><option>VANESSA MOREIRA DOS SANTOS</option><option>VERONICA COUTO SANTOS</option><option>WENDERSON SILVA MACHADO</option><option>WELBER RAFAEL LUZ BARRETTO FONSECA</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Setor</label>
+            <select id="setor">
+              <option value="">Selecione...</option>
+              <option>ADM</option><option>AUDITORIA</option><option>CALL CENTER</option><option>COMPRAS</option><option>DIRETORIA</option><option>FINANCEIRO</option><option>GARANTIA</option><option>INFRA</option><option>LAB</option><option>LOGÍSTICA</option><option>MERCHANDISING</option><option>PÓS VENDA</option><option>QUOTES</option><option>RECRUTAMENTO</option><option>RH</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Quem recebeu (analista)</label>
+            <select id="quem-recebeu">
+              <option value="">Selecione...</option>
+              <option>GILCIMARA ANDRADE</option><option>JEAN MENEZES</option><option>VINICIUS BRANDÃO</option><option>FELIPE GALVÃO</option><option>SOLANGE VILARINO</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Data da entrega</label>
+            <input type="date" id="data-entrega">
+          </div>
+          <div class="field">
+            <label>Horário</label>
+            <input type="time" id="horario-entrega">
+          </div>
+          <div class="field">
+            <label>Sairá no envio</label>
+            <select id="saira-envio">
+              <option>SEMANAL</option><option>EXPRESSO</option><option>URGENTE</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:flex-end;">
+        <button class="btn-primary" style="width:auto; padding: 11px 28px;" onclick="irStep2()">Próximo →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: ITENS -->
+    <div id="step2" style="display:none">
+      <div class="steps">
+        <div class="step done"><div class="step-dot">✓</div> Dados</div>
+        <div class="step-line"></div>
+        <div class="step active"><div class="step-dot">2</div> Itens</div>
+        <div class="step-line"></div>
+        <div class="step"><div class="step-dot">3</div> Assinaturas</div>
+      </div>
+      <div class="card">
+        <div class="section-title">Itens entregues <span class="badge" id="badge-count">0</span></div>
+        <div class="itens-list" id="itens-list"></div>
+        <button class="btn-add-item" onclick="addItem()">+ Adicionar item</button>
+      </div>
+      <div class="row-btns">
+        <button class="btn-secondary" onclick="voltarStep1()">← Voltar</button>
+        <button class="btn-primary" style="width:auto; padding:11px 28px;" onclick="irStep3()">Próximo →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: ASSINATURAS -->
+    <div id="step3" style="display:none">
+      <div class="steps">
+        <div class="step done"><div class="step-dot">✓</div> Dados</div>
+        <div class="step-line"></div>
+        <div class="step done"><div class="step-dot">✓</div> Itens</div>
+        <div class="step-line"></div>
+        <div class="step active"><div class="step-dot">3</div> Assinaturas</div>
+      </div>
+
+      <!-- Resumo -->
+      <div class="confirm-section">
+        <h4>📋 Resumo da entrega</h4>
+        <div style="margin: 8px 0; font-size:13px; color: var(--text2);">
+          <strong id="res-funcionario"></strong> — <span id="res-setor"></span> &nbsp;|&nbsp; Recebido por: <strong id="res-recebedor"></strong> &nbsp;|&nbsp; <span id="res-data"></span> às <span id="res-hora"></span>
+        </div>
+        <div class="itens-preview" id="itens-preview"></div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Assinatura de quem entregou</div>
+        <div class="field" style="margin-bottom:8px;">
+          <label>Nome legível do entregador</label>
+          <input type="text" id="nome-entregador" placeholder="Nome completo do entregador">
+        </div>
+        <div class="sig-area">
+          <canvas id="canvas-entregador"></canvas>
+          <div class="sig-placeholder" id="ph-entregador">✍️ Assine aqui</div>
+          <div class="sig-actions"><button class="btn-clear-sig" onclick="limparCanvas('entregador')">Limpar</button></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Assinatura de quem recebeu</div>
+        <div class="field" style="margin-bottom:8px;">
+          <label>Nome legível do recebedor</label>
+          <input type="text" id="nome-recebedor-sig" placeholder="Nome completo do recebedor">
+        </div>
+        <div class="sig-area">
+          <canvas id="canvas-recebedor"></canvas>
+          <div class="sig-placeholder" id="ph-recebedor">✍️ Assine aqui</div>
+          <div class="sig-actions"><button class="btn-clear-sig" onclick="limparCanvas('recebedor')">Limpar</button></div>
+        </div>
+      </div>
+
+      <div class="row-btns">
+        <button class="btn-secondary" onclick="voltarStep2()">← Voltar</button>
+        <button class="btn-success" id="btn-salvar" onclick="salvarRegistro()">✔ Salvar Registro</button>
+      </div>
+    </div>
+
+  </div><!-- /page-registro -->
+
+  <!-- GERENCIAR PAGE -->
+  <div class="page" id="page-gerenciar">
+    <div class="section-title">Gerenciar Envios</div>
+    <div class="filters-bar">
+      <input type="text" id="filtro-busca" placeholder="Buscar destino, setor, funcionário..." oninput="renderTabela()">
+      <select id="filtro-setor" onchange="renderTabela()">
+        <option value="">Todos os setores</option>
+        <option>ADM</option><option>AUDITORIA</option><option>CALL CENTER</option><option>COMPRAS</option><option>DIRETORIA</option><option>FINANCEIRO</option><option>GARANTIA</option><option>INFRA</option><option>LAB</option><option>LOGÍSTICA</option><option>MERCHANDISING</option><option>PÓS VENDA</option><option>QUOTES</option><option>RECRUTAMENTO</option><option>RH</option>
+      </select>
+      <select id="filtro-status" onchange="renderTabela()">
+        <option value="">Todos os status</option>
+        <option>AGUARDANDO ENVIO</option><option>ENVIADO</option><option>ENTREGUE</option><option>PROBLEMA</option>
+      </select>
+      <input type="date" id="filtro-data" onchange="renderTabela()">
+      <button class="btn-primary" style="padding:8px 16px;width:auto;font-size:13px;" onclick="carregarEnvios()">↺ Atualizar</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Funcionário</th>
+            <th>Setor</th>
+            <th>Destino</th>
+            <th>Descrição</th>
+            <th>Rastreio</th>
+            <th>Status</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-envios"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://fevhyllvfhvzzfhwyjuk.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldmh5bGx2Zmh2enpmand5anVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDUwMDM4MDEsImV4cCI6MjAyMDU3OTgwMX0.7k0ia-bTzQlpFchFgkbGQIVUFDiKC5kFnEpkfh8bKzI';
+const SENHA = 'estoque2026';
+
+let dadosGerais = {};
+let itens = [];
+let todoEnvios = [];
+let sigData = { entregador: null, recebedor: null };
+let drawing = { entregador: false, recebedor: false };
+
+// TEMA
+const tema = () => {
+  const t = localStorage.getItem('tema') || 'light';
+  document.body.classList.toggle('dark', t === 'dark');
+};
+tema();
+function toggleTema() {
+  const isDark = document.body.classList.toggle('dark');
+  localStorage.setItem('tema', isDark ? 'dark' : 'light');
+}
+
+// AUTH
+function fazerLogin() {
+  const val = document.getElementById('senha-input').value;
+  if (val === SENHA) {
+    document.getElementById('page-login').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    inicializar();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+function logout() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('page-login').style.display = 'block';
+  document.getElementById('senha-input').value = '';
+}
+
+function inicializar() {
+  // data/hora padrão
+  const now = new Date();
+  document.getElementById('data-entrega').value = now.toISOString().slice(0,10);
+  document.getElementById('horario-entrega').value = now.toTimeString().slice(0,5);
+  addItem();
+  initCanvas('entregador');
+  initCanvas('recebedor');
+  carregarEnvios();
+}
+
+// NAVEGAÇÃO
+function irPara(aba) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + aba).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.textContent.toLowerCase().includes(aba.slice(0,4))) b.classList.add('active');
+  });
+  if (aba === 'gerenciar') carregarEnvios();
+}
+
+// STEPS
+function irStep2() {
+  const f = document.getElementById('funcionario').value;
+  const s = document.getElementById('setor').value;
+  const q = document.getElementById('quem-recebeu').value;
+  const d = document.getElementById('data-entrega').value;
+  const h = document.getElementById('horario-entrega').value;
+  if (!f || !s || !q || !d || !h) { showToast('Preencha todos os campos.', 'error'); return; }
+  dadosGerais = { funcionario: f, setor: s, quem_recebeu: q, data_entrega: d, horario_entrega: h, saira_no_envio: document.getElementById('saira-envio').value };
+  document.getElementById('step1').style.display = 'none';
+  document.getElementById('step2').style.display = 'block';
+}
+function voltarStep1() {
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('step1').style.display = 'block';
+}
+function irStep3() {
+  if (itens.length === 0) { showToast('Adicione ao menos um item.', 'error'); return; }
+  const validos = itens.filter(i => i.destino && i.descricao);
+  if (validos.length !== itens.length) { showToast('Preencha destino e descrição de todos os itens.', 'error'); return; }
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('step3').style.display = 'block';
+  // resumo
+  document.getElementById('res-funcionario').textContent = dadosGerais.funcionario;
+  document.getElementById('res-setor').textContent = dadosGerais.setor;
+  document.getElementById('res-recebedor').textContent = dadosGerais.quem_recebeu;
+  document.getElementById('res-data').textContent = dadosGerais.data_entrega.split('-').reverse().join('/');
+  document.getElementById('res-hora').textContent = dadosGerais.horario_entrega;
+  const prev = document.getElementById('itens-preview');
+  prev.innerHTML = itens.map(i => `<div class="item-preview-row"><div class="dest">📍 ${i.destino}</div><div class="desc">${i.descricao}</div></div>`).join('');
+  document.getElementById('nome-entregador').value = dadosGerais.funcionario;
+  document.getElementById('nome-recebedor-sig').value = dadosGerais.quem_recebeu;
+}
+function voltarStep2() {
+  document.getElementById('step3').style.display = 'none';
+  document.getElementById('step2').style.display = 'block';
+}
+
+// ITENS
+function addItem() {
+  const id = Date.now();
+  itens.push({ id, destino: '', descricao: '' });
+  renderItens();
+}
+function removeItem(id) {
+  itens = itens.filter(i => i.id !== id);
+  renderItens();
+}
+function renderItens() {
+  document.getElementById('badge-count').textContent = itens.length;
+  document.getElementById('itens-list').innerHTML = itens.map((item, idx) => `
+    <div class="item-row">
+      <div class="item-row-header">
+        <span class="item-label">Item ${idx + 1}</span>
+        ${itens.length > 1 ? `<button class="btn-remove" onclick="removeItem(${item.id})">×</button>` : ''}
+      </div>
+      <div class="form-grid">
+        <div class="field full">
+          <label>Destino (ponto de venda)</label>
+          <select onchange="updateItem(${item.id},'destino',this.value)">
+            <option value="">Selecione o destino...</option>
+            ${destinosOpts(item.destino)}
+          </select>
+        </div>
+        <div class="field full">
+          <label>Descrição do item</label>
+          <textarea placeholder="Descreva exatamente como está no papel..." onchange="updateItem(${item.id},'descricao',this.value)">${item.descricao}</textarea>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function updateItem(id, campo, val) {
+  const item = itens.find(i => i.id === id);
+  if (item) item[campo] = val;
+}
+
+const DESTINOS = ['AEROPORTO LOJA 153','ARACAJU RIOMAR LOJA 143A','ARACAJU RIOMAR Q 202','ARACAJU JARDINS Q 25','ARACAJU JARDINS Q 50','BAHIA FASHION LOJA 32','BAHIA LOJA 24','BAHIA LOJA 36','BAHIA Q 002/309','BARRA LESTE Q 112','BARRA LOJA 342','BARRA LOJA 437','BARRA SUL Q 120','BELA VISTA LOJA 55','BELA VISTA Q 9.1','BELÉM BOULEVARD FASHION 262','BELÉM BOULEVARD LOJA 459','BELÉM BOULEVARD Q 103','BELÉM PARQUE Q 07','BH BOULEVARD 1049','BH DEL REY LOJA 3025','BH DEL REY Q 1690','BH DIAMONDMALL LOJA BG57','BH DIAMONDMALL Q GD04','BH SHOPPING LOJA 08','BH SHOPPING FASHION 26/A','BH SHOPPING Q MA01','BH SAVASSI LOJA 103','BOTAFAGO LOJA 126','BRASILIA LOJA 293','CAMPINAS LOJA 1229','CAMPINAS Q F786','CONQUISTA LOJA 1017','FEIRA DE SANTANA LOJA 213','FEIRA SANTANA Q B23','FORTALEZA IGUATEMI LOJA 617','FORTALEZA IGUATEMI Q 160','FORTALEZA RIOMAR LOJA 1173','FORTALEZA RIOMAR LOJA 2062','GOIANIA FLAMBOYANT LOJA P438','GOIANIA FLAMBOYANT QP13','GOIANIA FLAMBOYANT Q S10','GOIANIA FLAMBOYANT Q P04','GOIANIA SHOPPING LOJA 217','GOIÂNIA SHOPPING QTB19','LAURO DE FREITAS LOJA 1093','LAURO DE FREITAS Q 107','MACEIÓ PARQUE LOJA 1042','MACEIÓ PARQUE LOJA 3080','MACEIÓ PARQUE Q 04','MACEIÓ SHOPPING LOJA 308','MANAUS AMAZONAS QA39','MANAUS MANAUARA LOJA 90','MANAUS MANAUARA Q 758','NATAL LOJA 378','NATAL MIDWAY MALL LOJA 254','NITEROI LOJA SPN00313','NITEROI Q 108','NORTE QUIOSQUE','PARALELA FASHION LOJA 214','PARALELA QUIOSQUE 108','RECIFE RIOMAR LOJA 1061','RECIFE RIOMAR FASHION LOJA 1152','RECIFE RIOMAR Q 101','RECIFE RIOMAR Q 211','RIO DE JANEIRO FASHION LOJA 115','RIO DE JANEIRO LOJA 106','RIO DE JANEIRO LOJA 248A','RIO DE JANEIRO Q P12','RIO DE JANEIRO Q P39','RIO DE JANEIRO SUL LOJA 401','RIO DE JANEIRO DESIGN Q 3F','SALVADOR MEGA STORE','SALVADOR MINI MEGA','SALVADOR FASHION 2074A','SALVADOR BE Q 112','SALVADOR IPHONE Q 107','SALVADOR ANDROID Q 122','SÃO PAULO OLÍMPIA LOJA 218','SÃO PAULO TAMBORÉ LOJA STBS0027','SERRA LOJA','SHOPPING RECIFE LOJA PC145','SHOPPING RECIFE LOJA BV164','SHOPPING RECIFE LOJA BV072','SHOPPINF RECIFE BE Q P4.1','SHOPPING RECIFE Q P50','TIJUCA Q 105','VILA VELHA LOJA 1031','VILA VELHA LOJA 1071','VILA VELHA LOJA 104E','VILA VELHA FASHION Q 2021','VILA VELHA QUIOSQUE 206','VILA VELHA Q 121','VITORIA LOJA 116','VITORIA LOJA 410 / 411','VITORIA Q S118','VITORIA Q S134'];
+function destinosOpts(sel) {
+  return DESTINOS.map(d => `<option value="${d}" ${d===sel?'selected':''}>${d}</option>`).join('');
+}
+
+// CANVAS ASSINATURA
+function initCanvas(id) {
+  const canvas = document.getElementById('canvas-' + id);
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+  canvas.height = 160 * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+  ctx.strokeStyle = document.body.classList.contains('dark') ? '#e8eaf0' : '#1a1d23';
+  ctx.lineWidth = 2;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  const getPos = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - rect.left), y: (src.clientY - rect.top) };
+  };
+
+  const start = (e) => {
+    e.preventDefault();
+    drawing[id] = true;
+    const p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    document.getElementById('ph-' + id).style.opacity = '0';
+  };
+  const move = (e) => {
+    if (!drawing[id]) return;
+    e.preventDefault();
+    const p = getPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  };
+  const end = () => { drawing[id] = false; };
+
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  canvas.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, { passive: false });
+  canvas.addEventListener('touchmove', move, { passive: false });
+  canvas.addEventListener('touchend', end);
+}
+
+function limparCanvas(id) {
+  const canvas = document.getElementById('canvas-' + id);
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('ph-' + id).style.opacity = '1';
+}
+
+function getCanvasData(id) {
+  const canvas = document.getElementById('canvas-' + id);
+  const blank = document.createElement('canvas');
+  blank.width = canvas.width; blank.height = canvas.height;
+  return canvas.toDataURL() === blank.toDataURL() ? null : canvas.toDataURL();
+}
+
+// SALVAR
+async function salvarRegistro() {
+  const sigEnt = getCanvasData('entregador');
+  const sigRec = getCanvasData('recebedor');
+  if (!sigEnt) { showToast('Assinatura do entregador obrigatória.', 'error'); return; }
+  if (!sigRec) { showToast('Assinatura do recebedor obrigatória.', 'error'); return; }
+
+  const btn = document.getElementById('btn-salvar');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  const sessao_id = 'sess_' + Date.now();
+  const rows = itens.map(item => ({
+    sessao_id,
+    funcionario: dadosGerais.funcionario,
+    setor: dadosGerais.setor,
+    quem_recebeu: dadosGerais.quem_recebeu,
+    data_entrega: dadosGerais.data_entrega,
+    horario_entrega: dadosGerais.horario_entrega,
+    saira_no_envio: dadosGerais.saira_no_envio,
+    destino: item.destino,
+    descricao_item: item.descricao,
+    nome_entregador: document.getElementById('nome-entregador').value,
+    nome_recebedor_sig: document.getElementById('nome-recebedor-sig').value,
+    assinatura_entregador: sigEnt,
+    assinatura_recebedor: sigRec,
+    status: 'AGUARDANDO ENVIO'
+  }));
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/protocolo_envios`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Prefer': 'return=minimal' },
+      body: JSON.stringify(rows)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    showToast(`${itens.length} item(s) registrado(s) com sucesso!`, 'success');
+    setTimeout(() => resetForm(), 1500);
+  } catch(e) {
+    showToast('Erro ao salvar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '✔ Salvar Registro';
+  }
+}
+
+function resetForm() {
+  itens = [];
+  dadosGerais = {};
+  document.getElementById('step3').style.display = 'none';
+  document.getElementById('step1').style.display = 'block';
+  // reset fields
+  ['funcionario','setor','quem-recebeu','saira-envio'].forEach(id => document.getElementById(id).selectedIndex = 0);
+  const now = new Date();
+  document.getElementById('data-entrega').value = now.toISOString().slice(0,10);
+  document.getElementById('horario-entrega').value = now.toTimeString().slice(0,5);
+  limparCanvas('entregador'); limparCanvas('recebedor');
+  addItem();
+}
+
+// GERENCIAR
+async function carregarEnvios() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/protocolo_envios?order=data_entrega.desc,horario_entrega.desc&limit=300`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+    });
+    todoEnvios = await res.json();
+    renderTabela();
+  } catch(e) { showToast('Erro ao carregar.', 'error'); }
+}
+
+function renderTabela() {
+  const busca = document.getElementById('filtro-busca').value.toLowerCase();
+  const setor = document.getElementById('filtro-setor').value;
+  const status = document.getElementById('filtro-status').value;
+  const data = document.getElementById('filtro-data').value;
+
+  let dados = todoEnvios.filter(r => {
+    if (setor && r.setor !== setor) return false;
+    if (status && r.status !== status) return false;
+    if (data && r.data_entrega !== data) return false;
+    if (busca && !`${r.destino} ${r.setor} ${r.funcionario} ${r.descricao_item}`.toLowerCase().includes(busca)) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('tbody-envios');
+  if (!dados.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state">Nenhum registro encontrado.</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = dados.map(r => {
+    const sc = statusClass(r.status);
+    return `<tr>
+      <td style="white-space:nowrap">${r.data_entrega?.split('-').reverse().join('/')}<br><small style="color:var(--text2)">${r.horario_entrega?.slice(0,5)}</small></td>
+      <td style="font-size:12px">${r.funcionario}</td>
+      <td><span class="status-badge" style="background:var(--tag-bg);color:var(--tag-text)">${r.setor}</span></td>
+      <td style="font-size:12px">${r.destino}</td>
+      <td style="font-size:12px;max-width:200px">${r.descricao_item}</td>
+      <td><input class="inline-input" value="${r.rastreio||''}" placeholder="Cole o rastreio" id="rastreio-${r.id}"></td>
+      <td>
+        <select class="inline-select" id="status-${r.id}">
+          <option ${r.status==='AGUARDANDO ENVIO'?'selected':''}>AGUARDANDO ENVIO</option>
+          <option ${r.status==='ENVIADO'?'selected':''}>ENVIADO</option>
+          <option ${r.status==='ENTREGUE'?'selected':''}>ENTREGUE</option>
+          <option ${r.status==='PROBLEMA'?'selected':''}>PROBLEMA</option>
+        </select>
+      </td>
+      <td><button class="btn-save-row" onclick="salvarLinha('${r.id}')">Salvar</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function salvarLinha(id) {
+  const rastreio = document.getElementById('rastreio-' + id).value;
+  const status = document.getElementById('status-' + id).value;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/protocolo_envios?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY },
+      body: JSON.stringify({ rastreio, status })
+    });
+    // atualiza local
+    const item = todoEnvios.find(r => r.id === id);
+    if (item) { item.rastreio = rastreio; item.status = status; }
+    showToast('Atualizado!', 'success');
+    renderTabela();
+  } catch(e) { showToast('Erro.', 'error'); }
+}
+
+function statusClass(s) {
+  if (s === 'AGUARDANDO ENVIO') return 'status-aguardando';
+  if (s === 'ENVIADO') return 'status-enviado';
+  if (s === 'ENTREGUE') return 'status-entregue';
+  if (s === 'PROBLEMA') return 'status-problema';
+  return '';
+}
+
+// TOAST
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3000);
+}
+</script>
+</body>
+</html>
