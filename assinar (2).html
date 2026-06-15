@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Assinatura</title>
+<style>
+  :root{--bg:#0f1117;--surface:#1a1d24;--border:#2e3340;--text:#e8eaf0;--text2:#8b93a7;--accent:#2563eb;--success:#16a34a;--danger:#dc2626;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+  .logo{font-size:13px;font-weight:700;color:var(--text2);margin-bottom:20px;}
+  .logo span{color:var(--accent);}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:440px;}
+  .card h2{font-size:17px;margin-bottom:4px;text-align:center;}
+  .nome-tag{text-align:center;font-size:13px;color:var(--text2);margin-bottom:16px;}
+  .nome-tag strong{color:var(--text);}
+  .sig-wrap{border:2px solid var(--border);border-radius:12px;background:#fff;position:relative;overflow:hidden;margin-bottom:14px;}
+  .sig-wrap canvas{display:block;width:100%;height:220px;cursor:crosshair;touch-action:none;}
+  .sig-placeholder{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#9ca3af;font-size:14px;pointer-events:none;}
+  .sig-actions{display:flex;justify-content:flex-end;padding:6px 10px;border-top:1px solid #e5e7eb;}
+  .btn-clear{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:12px;padding:4px 10px;cursor:pointer;}
+  .btn-confirm{width:100%;background:var(--success);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .15s;}
+  .btn-confirm:disabled{opacity:.4;cursor:not-allowed;}
+  .status{font-size:13px;color:var(--text2);text-align:center;margin-top:10px;min-height:20px;}
+  .status.err{color:var(--danger);}
+  .done-card{display:none;text-align:center;padding:40px 24px;}
+  .done-icon{font-size:52px;margin-bottom:12px;}
+  .done-card h2{font-size:18px;margin-bottom:8px;color:var(--success);}
+  .done-card p{color:var(--text2);font-size:13px;line-height:1.6;}
+  .aguardando-card{display:none;text-align:center;padding:40px 24px;}
+  .aguardando-card .icon{font-size:52px;margin-bottom:12px;}
+  .aguardando-card h2{font-size:18px;margin-bottom:8px;}
+  .aguardando-card p{color:var(--text2);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="logo">Protocolo <span>Saída</span></div>
+
+<div class="card" id="main-card">
+  <h2 id="titulo">✍️ Assinatura</h2>
+  <div class="nome-tag">Assinando como: <strong id="nome-display">—</strong></div>
+  <div class="sig-wrap">
+    <canvas id="canvas"></canvas>
+    <div class="sig-placeholder" id="placeholder">Assine aqui com o dedo</div>
+    <div class="sig-actions"><button class="btn-clear" onclick="limpar()">Limpar</button></div>
+  </div>
+  <button class="btn-confirm" id="btn-confirm" onclick="confirmar()">✔ Confirmar assinatura</button>
+  <div class="status" id="status"></div>
+</div>
+
+<div class="aguardando-card" id="aguardando-card">
+  <div class="icon">⏳</div>
+  <h2>Aguarde...</h2>
+  <p>Assinatura enviada!<br>Aguardando próxima etapa.</p>
+</div>
+
+<div class="done-card" id="done-card">
+  <div class="done-icon">✅</div>
+  <h2>Tudo assinado!</h2>
+  <p>Todas as assinaturas foram coletadas.<br>Pode fechar essa tela.</p>
+</div>
+
+<script>
+const SB_URL='https://fevhyllvfhvzzfhwyjuk.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldmh5bGx2Zmh2enpmaHd5anVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzEyMTcsImV4cCI6MjA5NDQ0NzIxN30.GJRgEKW1bVWX1957_bKCTO6aVmR_rXWRCmo9-ZJDPiE';
+const H={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+var params=new URLSearchParams(location.search);
+var SESSAO=params.get('sessao');
+var TIPO=params.get('tipo'); // 'entregador' ou 'recebedor'
+var NOME=decodeURIComponent(params.get('nome')||'');
+
+var canvas=document.getElementById('canvas');
+var ctx=canvas.getContext('2d');
+var drawing=false;
+
+document.getElementById('nome-display').textContent=NOME||'—';
+document.getElementById('titulo').textContent=TIPO==='entregador'?'✍️ Assinatura — Entregador':'✍️ Assinatura — Recebedor';
+
+if(!SESSAO||!TIPO){
+  document.getElementById('status').textContent='Link inválido.';
+  document.getElementById('status').className='status err';
+  document.getElementById('btn-confirm').disabled=true;
+}
+
+// init canvas
+function initCanvas(){
+  canvas.width=canvas.offsetWidth*devicePixelRatio;
+  canvas.height=220*devicePixelRatio;
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  ctx.strokeStyle='#1a1d23';
+  ctx.lineWidth=2.5;
+  ctx.lineCap='round';
+  ctx.lineJoin='round';
+}
+initCanvas();
+
+function pos(e){
+  var r=canvas.getBoundingClientRect();
+  var s=e.touches?e.touches[0]:e;
+  return{x:s.clientX-r.left,y:s.clientY-r.top};
+}
+canvas.addEventListener('mousedown',function(e){drawing=true;var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);document.getElementById('placeholder').style.opacity='0';});
+canvas.addEventListener('mousemove',function(e){if(!drawing)return;var p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();});
+canvas.addEventListener('mouseup',function(){drawing=false;});
+canvas.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);document.getElementById('placeholder').style.opacity='0';},{passive:false});
+canvas.addEventListener('touchmove',function(e){e.preventDefault();if(!drawing)return;var p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();},{passive:false});
+canvas.addEventListener('touchend',function(){drawing=false;});
+
+function limpar(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  document.getElementById('placeholder').style.opacity='1';
+}
+
+function isVazio(){
+  var blank=document.createElement('canvas');
+  blank.width=canvas.width;blank.height=canvas.height;
+  return canvas.toDataURL()===blank.toDataURL();
+}
+
+async function confirmar(){
+  if(isVazio()){document.getElementById('status').textContent='Por favor, assine antes de confirmar.';document.getElementById('status').className='status err';return;}
+  var btn=document.getElementById('btn-confirm');
+  btn.disabled=true;btn.textContent='Enviando...';
+  document.getElementById('status').textContent='';
+  try{
+    var assinatura=canvas.toDataURL();
+    var res=await fetch(SB_URL+'/rest/v1/protocolo_assinaturas_temp',{
+      method:'POST',headers:H,
+      body:JSON.stringify({sessao_id:SESSAO,tipo:TIPO,nome:NOME,assinatura_base64:assinatura,usado:false})
+    });
+    if(!res.ok) throw new Error('Erro ao salvar.');
+    document.getElementById('main-card').style.display='none';
+    if(TIPO==='entregador'){
+      // aguarda computador liberar próxima
+      document.getElementById('aguardando-card').style.display='block';
+      aguardarProxima();
+    } else {
+      document.getElementById('done-card').style.display='block';
+    }
+  }catch(e){
+    document.getElementById('status').textContent='❌ Erro. Tente novamente.';
+    document.getElementById('status').className='status err';
+    btn.disabled=false;btn.textContent='✔ Confirmar assinatura';
+  }
+}
+
+// após assinar como entregador, aguarda computador acionar o recebedor
+// o computador vai atualizar a URL para ?tipo=recebedor
+// mas neste fluxo o celular fica na mesma página — o computador vai mandar
+// o próximo QR. Então apenas mostra "aguarde" e fecha quando detectar recebedor salvo.
+var pollProxima=null;
+function aguardarProxima(){
+  // fica esperando o computador confirmar que recebeu (usado=true neste registro)
+  // quando confirmar, mostra tela de "pode fechar"
+  pollProxima=setInterval(async function(){
+    try{
+      var res=await fetch(SB_URL+'/rest/v1/protocolo_assinaturas_temp?sessao_id=eq.'+SESSAO+'&tipo=eq.entregador&usado=eq.true',{headers:H});
+      var rows=await res.json();
+      if(rows&&rows.length>0){
+        clearInterval(pollProxima);
+        document.getElementById('aguardando-card').style.display='none';
+        document.getElementById('done-card').style.display='block';
+      }
+    }catch(e){}
+  },2000);
+}
+</script>
+</body>
+</html>
