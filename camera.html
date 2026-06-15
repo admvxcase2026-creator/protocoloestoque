@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fotografar Papel</title>
+<style>
+  :root{--bg:#0f1117;--surface:#1a1d24;--border:#2e3340;--text:#e8eaf0;--text2:#8b93a7;--accent:#2563eb;--success:#16a34a;--danger:#dc2626;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;}
+  .logo{font-size:14px;font-weight:700;color:var(--text2);margin-bottom:24px;letter-spacing:.5px;}
+  .logo span{color:var(--accent);}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;width:100%;max-width:400px;text-align:center;}
+  .card h2{font-size:18px;margin-bottom:8px;}
+  .card p{color:var(--text2);font-size:13px;margin-bottom:24px;line-height:1.5;}
+  .preview-wrap{position:relative;border-radius:12px;overflow:hidden;background:#000;margin-bottom:20px;display:none;}
+  .preview-wrap img{width:100%;display:block;max-height:340px;object-fit:contain;}
+  .btn{width:100%;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;transition:opacity .15s;}
+  .btn:hover{opacity:.88;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-cam{background:var(--accent);color:#fff;}
+  .btn-confirm{background:var(--success);color:#fff;display:none;}
+  .btn-retry{background:var(--surface);color:var(--text);border:1px solid var(--border);display:none;}
+  .status{font-size:13px;color:var(--text2);margin-top:8px;min-height:20px;}
+  .status.ok{color:var(--success);}
+  .status.err{color:var(--danger);}
+  input[type=file]{display:none;}
+  .done-icon{font-size:56px;margin-bottom:12px;}
+  .done-card{display:none;text-align:center;}
+  .done-card h2{font-size:20px;margin-bottom:8px;color:var(--success);}
+  .done-card p{color:var(--text2);font-size:13px;}
+</style>
+</head>
+<body>
+
+<div class="logo">Protocolo <span>Saída</span></div>
+
+<div class="card" id="main-card">
+  <h2>📄 Fotografar Papel</h2>
+  <p>Aponte a câmera para o papel com a descrição do item e tire a foto.</p>
+  <div class="preview-wrap" id="preview-wrap">
+    <img id="preview-img" src="" alt="preview">
+  </div>
+  <input type="file" id="file-input" accept="image/*" capture="environment">
+  <button class="btn btn-cam" id="btn-cam" onclick="abrirCamera()">📷 Abrir câmera</button>
+  <button class="btn btn-confirm" id="btn-confirm" onclick="enviarFoto()">✔ Confirmar e enviar</button>
+  <button class="btn btn-retry" id="btn-retry" onclick="abrirCamera()">↺ Tirar outra foto</button>
+  <div class="status" id="status"></div>
+</div>
+
+<div class="done-card" id="done-card">
+  <div class="done-icon">✅</div>
+  <h2>Foto enviada!</h2>
+  <p>O sistema está transcrevendo o conteúdo.<br>Pode fechar essa tela.</p>
+</div>
+
+<script>
+const SB_URL='https://fevhyllvfhvzzfhwyjuk.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldmh5bGx2Zmh2enpmaHd5anVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzEyMTcsImV4cCI6MjA5NDQ0NzIxN30.GJRgEKW1bVWX1957_bKCTO6aVmR_rXWRCmo9-ZJDPiE';
+const H={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+var params=new URLSearchParams(location.search);
+var SESSAO=params.get('sessao');
+var fotoBase64=null;
+var fotoType='image/jpeg';
+
+if(!SESSAO){
+  document.getElementById('status').textContent='QR Code inválido.';
+  document.getElementById('status').className='status err';
+  document.getElementById('btn-cam').disabled=true;
+}
+
+var fileInput=document.getElementById('file-input');
+fileInput.addEventListener('change',function(){
+  if(!fileInput.files||!fileInput.files[0]) return;
+  var file=fileInput.files[0];
+  fotoType=file.type||'image/jpeg';
+  var reader=new FileReader();
+  reader.onload=function(e){
+    fotoBase64=e.target.result.split(',')[1];
+    document.getElementById('preview-img').src=e.target.result;
+    document.getElementById('preview-wrap').style.display='block';
+    document.getElementById('btn-confirm').style.display='block';
+    document.getElementById('btn-retry').style.display='block';
+    document.getElementById('btn-cam').style.display='none';
+    document.getElementById('status').textContent='Foto pronta. Confirme para enviar.';
+    document.getElementById('status').className='status';
+  };
+  reader.readAsDataURL(file);
+});
+
+function abrirCamera(){
+  fileInput.value='';
+  fileInput.click();
+}
+
+async function enviarFoto(){
+  if(!fotoBase64){return;}
+  var btn=document.getElementById('btn-confirm');
+  btn.disabled=true;btn.textContent='Enviando...';
+  document.getElementById('btn-retry').style.display='none';
+  document.getElementById('status').textContent='⏳ Enviando foto...';
+  try{
+    var res=await fetch(SB_URL+'/rest/v1/protocolo_fotos_temp',{
+      method:'POST',
+      headers:H,
+      body:JSON.stringify({sessao_id:SESSAO,foto_base64:fotoBase64,media_type:fotoType,usado:false})
+    });
+    if(!res.ok) throw new Error(await res.text());
+    document.getElementById('main-card').style.display='none';
+    document.getElementById('done-card').style.display='block';
+  }catch(e){
+    document.getElementById('status').textContent='❌ Erro ao enviar. Tente novamente.';
+    document.getElementById('status').className='status err';
+    btn.disabled=false;btn.textContent='✔ Confirmar e enviar';
+    document.getElementById('btn-retry').style.display='block';
+  }
+}
+</script>
+</body>
+</html>
