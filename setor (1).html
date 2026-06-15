@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acompanhamento de Envios</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --surface: #ffffff; --surface2: #f0f1f3; --border: #dde1e7;
+    --text: #1a1d23; --text2: #6b7280; --accent: #2563eb; --accent-h: #1d4ed8;
+    --success: #16a34a; --danger: #dc2626; --warning: #d97706;
+    --tag-bg: #eff6ff; --tag-text: #2563eb;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.06);
+    --radius: 10px;
+  }
+  body.dark {
+    --bg: #0f1117; --surface: #1a1d24; --surface2: #22262f; --border: #2e3340;
+    --text: #e8eaf0; --text2: #8b93a7; --tag-bg: #1e2a47; --tag-text: #93c5fd;
+    --shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 12px rgba(0,0,0,.2);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 14px; min-height: 100vh; }
+
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .logo { font-weight: 700; font-size: 15px; }
+  .logo span { color: var(--accent); }
+  .setor-pill { background: var(--tag-bg); color: var(--tag-text); border-radius: 99px; padding: 4px 14px; font-size: 13px; font-weight: 700; }
+  .theme-btn { border: 1px solid var(--border); background: var(--surface2); color: var(--text2); border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+  /* STATS */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; box-shadow: var(--shadow); }
+  .stat-num { font-size: 28px; font-weight: 800; }
+  .stat-label { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
+  .num-total { color: var(--accent); }
+  .num-aguardando { color: var(--warning); }
+  .num-enviado { color: var(--accent); }
+  .num-entregue { color: var(--success); }
+
+  /* FILTERS */
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+  .filters input, .filters select { padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 13px; outline: none; }
+  .filters input { flex: 1; min-width: 180px; }
+  .btn-refresh { border: 1px solid var(--border); background: var(--surface); color: var(--text2); border-radius: 8px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+  .btn-refresh:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* CARDS */
+  .envios-grid { display: flex; flex-direction: column; gap: 10px; }
+  .envio-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
+  .envio-main {}
+  .envio-destino { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .envio-desc { font-size: 13px; color: var(--text2); margin-bottom: 8px; line-height: 1.4; }
+  .envio-meta { display: flex; gap: 14px; flex-wrap: wrap; }
+  .envio-meta span { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 4px; }
+  .envio-side { text-align: right; }
+  .status-badge { display: inline-block; border-radius: 99px; padding: 4px 12px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .status-aguardando { background: #fef3c7; color: #92400e; }
+  .status-enviado { background: #dbeafe; color: #1e40af; }
+  .status-entregue { background: #dcfce7; color: #166534; }
+  .status-problema { background: #fee2e2; color: #991b1b; }
+  body.dark .status-aguardando { background: #3d2c00; color: #fcd34d; }
+  body.dark .status-enviado { background: #1e2f55; color: #93c5fd; }
+  body.dark .status-entregue { background: #14302a; color: #4ade80; }
+  body.dark .status-problema { background: #3b1212; color: #fca5a5; }
+  .rastreio-box { margin-top: 8px; background: var(--surface2); border-radius: 6px; padding: 6px 10px; font-size: 12px; font-family: monospace; color: var(--text2); }
+  .rastreio-box.tem { color: var(--accent); font-weight: 600; }
+  .rastreio-link { color: var(--accent); text-decoration: none; font-weight: 600; }
+  .rastreio-link:hover { text-decoration: underline; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
+  .loading { text-align: center; padding: 48px; color: var(--text2); }
+
+  .update-time { font-size: 12px; color: var(--text2); text-align: right; margin-bottom: 12px; }
+
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .envio-card { grid-template-columns: 1fr; }
+    .envio-side { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">Protocolo <span>Estoque</span></div>
+    <div class="setor-pill" id="setor-pill">—</div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span style="font-size:12px;color:var(--text2)" id="last-update"></span>
+    <button class="theme-btn" onclick="toggleTema()">🌙</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="stats">
+    <div class="stat-card"><div class="stat-num num-total" id="st-total">—</div><div class="stat-label">Total</div></div>
+    <div class="stat-card"><div class="stat-num num-aguardando" id="st-aguardando">—</div><div class="stat-label">Aguardando</div></div>
+    <div class="stat-card"><div class="stat-num num-enviado" id="st-enviado">—</div><div class="stat-label">Enviado</div></div>
+    <div class="stat-card"><div class="stat-num num-entregue" id="st-entregue">—</div><div class="stat-label">Entregue</div></div>
+  </div>
+
+  <div class="filters">
+    <input type="text" id="filtro-busca" placeholder="Buscar destino ou descrição..." oninput="renderEnvios()">
+    <select id="filtro-status" onchange="renderEnvios()">
+      <option value="">Todos os status</option>
+      <option>AGUARDANDO ENVIO</option>
+      <option>ENVIADO</option>
+      <option>ENTREGUE</option>
+      <option>PROBLEMA</option>
+    </select>
+    <input type="date" id="filtro-data" onchange="renderEnvios()">
+    <button class="btn-refresh" onclick="carregar()">↺ Atualizar</button>
+  </div>
+
+  <div class="update-time" id="update-time"></div>
+  <div class="envios-grid" id="envios-grid"><div class="loading">Carregando...</div></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://fevhyllvfhvzzfhwyjuk.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldmh5bGx2Zmh2enpmaHd5anVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzEyMTcsImV4cCI6MjA5NDQ0NzIxN30.GJRgEKW1bVWX1957_bKCTO6aVmR_rXWRCmo9-ZJDPiE';
+
+// tema
+const aplicarTema = () => document.body.classList.toggle('dark', (localStorage.getItem('tema') || 'light') === 'dark');
+aplicarTema();
+function toggleTema() { document.body.classList.toggle('dark'); localStorage.setItem('tema', document.body.classList.contains('dark') ? 'dark' : 'light'); }
+
+// pega setor da URL
+const params = new URLSearchParams(location.search);
+const SETOR = (params.get('setor') || '').toUpperCase().trim();
+document.getElementById('setor-pill').textContent = SETOR || 'TODOS';
+document.title = `Envios — ${SETOR || 'Geral'}`;
+
+let todos = [];
+
+async function carregar() {
+  const grid = document.getElementById('envios-grid');
+  grid.innerHTML = '<div class="loading">Carregando...</div>';
+  try {
+    let url = `${SUPABASE_URL}/rest/v1/protocolo_envios?order=data_entrega.desc,horario_entrega.desc&limit=500`;
+    if (SETOR) url += `&setor=eq.${encodeURIComponent(SETOR)}`;
+    const res = await fetch(url, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } });
+    todos = await res.json();
+    const now = new Date();
+    document.getElementById('update-time').textContent = `Última atualização: ${now.toLocaleTimeString('pt-BR')}`;
+    renderEnvios();
+  } catch(e) {
+    grid.innerHTML = '<div class="empty-state">Erro ao carregar dados.</div>';
+  }
+}
+
+function renderEnvios() {
+  const busca = document.getElementById('filtro-busca').value.toLowerCase();
+  const status = document.getElementById('filtro-status').value;
+  const data = document.getElementById('filtro-data').value;
+
+  let dados = todos.filter(r => {
+    if (status && r.status !== status) return false;
+    if (data && r.data_entrega !== data) return false;
+    if (busca && !`${r.destino} ${r.descricao_item}`.toLowerCase().includes(busca)) return false;
+    return true;
+  });
+
+  // stats (sobre dados completos sem filtros de busca/status)
+  document.getElementById('st-total').textContent = todos.length;
+  document.getElementById('st-aguardando').textContent = todos.filter(r => r.status === 'AGUARDANDO ENVIO').length;
+  document.getElementById('st-enviado').textContent = todos.filter(r => r.status === 'ENVIADO').length;
+  document.getElementById('st-entregue').textContent = todos.filter(r => r.status === 'ENTREGUE').length;
+
+  const grid = document.getElementById('envios-grid');
+  if (!dados.length) {
+    grid.innerHTML = '<div class="empty-state">Nenhum envio encontrado.</div>';
+    return;
+  }
+
+  grid.innerHTML = dados.map(r => {
+    const sc = statusClass(r.status);
+    const dataFmt = r.data_entrega?.split('-').reverse().join('/');
+    const rastreioHtml = r.rastreio
+      ? `<div class="rastreio-box tem">📦 Rastreio: ${r.rastreio}</div>`
+      : `<div class="rastreio-box">Rastreio ainda não disponível</div>`;
+    return `
+      <div class="envio-card">
+        <div class="envio-main">
+          <div class="envio-destino">📍 ${r.destino}</div>
+          <div class="envio-desc">${r.descricao_item}</div>
+          <div class="envio-meta">
+            <span>👤 ${r.funcionario}</span>
+            <span>📅 ${dataFmt} às ${r.horario_entrega?.slice(0,5)}</span>
+            <span>📤 ${r.saira_no_envio || 'SEMANAL'}</span>
+          </div>
+          ${rastreioHtml}
+        </div>
+        <div class="envio-side">
+          <span class="status-badge ${sc}">${r.status}</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function statusClass(s) {
+  if (s === 'AGUARDANDO ENVIO') return 'status-aguardando';
+  if (s === 'ENVIADO') return 'status-enviado';
+  if (s === 'ENTREGUE') return 'status-entregue';
+  if (s === 'PROBLEMA') return 'status-problema';
+  return '';
+}
+
+// auto-refresh a cada 2 min
+carregar();
+setInterval(carregar, 120000);
+</script>
+</body>
+</html>
