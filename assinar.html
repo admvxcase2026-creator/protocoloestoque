@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Assinatura</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✍️</text></svg>">
+<style>
+  :root{--bg:#0f1117;--surface:#1a1d24;--border:#2e3340;--text:#e8eaf0;--text2:#8b93a7;--accent:#2563eb;--success:#16a34a;--danger:#dc2626;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+  .logo{font-size:13px;font-weight:700;color:var(--text2);margin-bottom:20px;}
+  .logo span{color:var(--accent);}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:440px;}
+  .step-indicator{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;}
+  .step-dot{width:10px;height:10px;border-radius:50%;background:var(--border);}
+  .step-dot.active{background:var(--accent);}
+  .step-dot.done{background:var(--success);}
+  .card h2{font-size:17px;margin-bottom:4px;text-align:center;}
+  .subtitulo{text-align:center;font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.4;}
+  .subtitulo strong{color:var(--text);}
+  .sig-wrap{border:2px solid var(--border);border-radius:12px;background:#fff;position:relative;overflow:hidden;margin-bottom:14px;}
+  .sig-wrap canvas{display:block;width:100%;height:220px;cursor:crosshair;touch-action:none;}
+  .sig-placeholder{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#9ca3af;font-size:14px;pointer-events:none;text-align:center;line-height:1.6;}
+  .sig-actions{display:flex;justify-content:flex-end;padding:6px 10px;border-top:1px solid #e5e7eb;}
+  .btn-clear{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-size:12px;padding:4px 10px;cursor:pointer;}
+  .btn-confirm{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;transition:opacity .15s;margin-bottom:6px;}
+  .btn-confirm:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-confirm.ultimo{background:var(--success);}
+  .status{font-size:13px;color:var(--text2);text-align:center;margin-top:6px;min-height:18px;}
+  .status.err{color:var(--danger);}
+  .done-card{display:none;text-align:center;padding:40px 24px;}
+  .done-icon{font-size:52px;margin-bottom:12px;}
+  .done-card h2{font-size:18px;margin-bottom:8px;color:var(--success);}
+  .done-card p{color:var(--text2);font-size:13px;line-height:1.6;}
+  .transicao{text-align:center;padding:32px 24px;display:none;}
+  .transicao .icon{font-size:44px;margin-bottom:10px;}
+  .transicao p{color:var(--text2);font-size:13px;}
+</style>
+</head>
+<body>
+<div class="logo">Protocolo <span>Saída</span></div>
+
+<div class="card" id="main-card">
+  <div class="step-indicator">
+    <div class="step-dot active" id="dot1"></div>
+    <div class="step-dot" id="dot2"></div>
+  </div>
+  <h2 id="titulo">✍️ Assinatura</h2>
+  <div class="subtitulo" id="subtitulo"></div>
+  <div class="sig-wrap">
+    <canvas id="canvas"></canvas>
+    <div class="sig-placeholder" id="placeholder">Assine aqui<br>com o dedo</div>
+    <div class="sig-actions"><button class="btn-clear" onclick="limpar()">Limpar</button></div>
+  </div>
+  <button class="btn-confirm" id="btn-confirm" onclick="confirmar()">Confirmar →</button>
+  <div class="status" id="status"></div>
+</div>
+
+<div class="transicao" id="transicao-card">
+  <div class="icon">✅</div>
+  <p>Assinatura registrada!<br>Passando para o próximo...</p>
+</div>
+
+<div class="done-card" id="done-card">
+  <div class="done-icon">✅</div>
+  <h2>Tudo assinado!</h2>
+  <p>Ambas as assinaturas foram coletadas.<br>Pode fechar essa tela.</p>
+</div>
+
+<script>
+const SB_URL='https://fevhyllvfhvzzfhwyjuk.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZldmh5bGx2Zmh2enpmaHd5anVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NzEyMTcsImV4cCI6MjA5NDQ0NzIxN30.GJRgEKW1bVWX1957_bKCTO6aVmR_rXWRCmo9-ZJDPiE';
+const H={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+
+var params=new URLSearchParams(location.search);
+var SESSAO=params.get('sessao');
+var NOME_ENT=decodeURIComponent(params.get('ent')||'Entregador');
+var NOME_REC=decodeURIComponent(params.get('rec')||'Recebedor');
+
+var etapa=1; // 1=entregador, 2=recebedor
+var canvas=document.getElementById('canvas');
+var ctx=canvas.getContext('2d');
+var drawing=false;
+
+function setupEtapa(){
+  limpar();
+  if(etapa===1){
+    document.getElementById('titulo').textContent='✍️ Assinatura do Entregador';
+    document.getElementById('subtitulo').innerHTML='Quem entregou: <strong>'+NOME_ENT+'</strong>';
+    document.getElementById('btn-confirm').textContent='Confirmar →';
+    document.getElementById('btn-confirm').className='btn-confirm';
+    document.getElementById('dot1').className='step-dot active';
+    document.getElementById('dot2').className='step-dot';
+  } else {
+    document.getElementById('titulo').textContent='✍️ Assinatura de quem Recebeu';
+    document.getElementById('subtitulo').innerHTML='Quem recebeu: <strong>'+NOME_REC+'</strong>';
+    document.getElementById('btn-confirm').textContent='✔ Finalizar';
+    document.getElementById('btn-confirm').className='btn-confirm ultimo';
+    document.getElementById('dot1').className='step-dot done';
+    document.getElementById('dot2').className='step-dot active';
+  }
+}
+setupEtapa();
+
+if(!SESSAO){
+  document.getElementById('status').textContent='Link inválido.';
+  document.getElementById('status').className='status err';
+  document.getElementById('btn-confirm').disabled=true;
+}
+
+// CANVAS
+function initCanvas(){
+  canvas.width=canvas.offsetWidth*devicePixelRatio;
+  canvas.height=220*devicePixelRatio;
+  ctx.scale(devicePixelRatio,devicePixelRatio);
+  ctx.strokeStyle='#111827';
+  ctx.lineWidth=2.5;
+  ctx.lineCap='round';
+  ctx.lineJoin='round';
+}
+initCanvas();
+
+function pos(e){var r=canvas.getBoundingClientRect(),s=e.touches?e.touches[0]:e;return{x:s.clientX-r.left,y:s.clientY-r.top};}
+canvas.addEventListener('mousedown',function(e){drawing=true;var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);document.getElementById('placeholder').style.opacity='0';});
+canvas.addEventListener('mousemove',function(e){if(!drawing)return;var p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();});
+canvas.addEventListener('mouseup',function(){drawing=false;});
+canvas.addEventListener('touchstart',function(e){e.preventDefault();drawing=true;var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);document.getElementById('placeholder').style.opacity='0';},{passive:false});
+canvas.addEventListener('touchmove',function(e){e.preventDefault();if(!drawing)return;var p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();},{passive:false});
+canvas.addEventListener('touchend',function(){drawing=false;});
+
+function limpar(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  document.getElementById('placeholder').style.opacity='1';
+}
+
+function isVazio(){
+  var b=document.createElement('canvas');b.width=canvas.width;b.height=canvas.height;
+  return canvas.toDataURL()===b.toDataURL();
+}
+
+async function confirmar(){
+  if(isVazio()){document.getElementById('status').textContent='Assine antes de confirmar.';document.getElementById('status').className='status err';return;}
+  var btn=document.getElementById('btn-confirm');
+  btn.disabled=true;btn.textContent='Enviando...';
+  document.getElementById('status').textContent='';
+  try{
+    var tipo=etapa===1?'entregador':'recebedor';
+    var nome=etapa===1?NOME_ENT:NOME_REC;
+    var res=await fetch(SB_URL+'/rest/v1/protocolo_assinaturas_temp',{
+      method:'POST',headers:H,
+      body:JSON.stringify({sessao_id:SESSAO,tipo:tipo,nome:nome,assinatura_base64:canvas.toDataURL(),usado:false})
+    });
+    if(!res.ok) throw new Error();
+
+    if(etapa===1){
+      // mostra transição e passa para recebedor
+      document.getElementById('main-card').style.display='none';
+      document.getElementById('transicao-card').style.display='block';
+      setTimeout(function(){
+        document.getElementById('transicao-card').style.display='none';
+        document.getElementById('main-card').style.display='block';
+        etapa=2;
+        setupEtapa();
+        btn.disabled=false;
+      },1200);
+    } else {
+      // finalizado
+      document.getElementById('main-card').style.display='none';
+      document.getElementById('done-card').style.display='block';
+    }
+  }catch(e){
+    document.getElementById('status').textContent='❌ Erro. Tente novamente.';
+    document.getElementById('status').className='status err';
+    btn.disabled=false;
+    btn.textContent=etapa===1?'Confirmar →':'✔ Finalizar';
+  }
+}
+</script>
+</body>
+</html>
