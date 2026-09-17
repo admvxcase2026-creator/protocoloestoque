@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Confirmação de Saída</title>
+
+<!-- PWA / "parecer app de verdade" -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2b5ce0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Confirma Saída">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    --bg:#0f1117; --panel:#171a23; --panel2:#1d212c; --border:#262b38;
+    --text:#eef0f5; --text2:#8c93a6; --accent:#2b5ce0; --accent2:#4f8cff;
+    --ok:#22a06b; --ok-dim:rgba(34,160,107,.14); --warn:#d97706; --danger:#e0393f;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none;}
+  html,body{height:100%; overscroll-behavior:none;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+    -webkit-user-select:none; user-select:none;
+    padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+    display:flex; flex-direction:column; height:100vh; overflow:hidden;
+  }
+  input{-webkit-user-select:text; user-select:text;}
+
+  /* ===== LOGIN ===== */
+  #tela-login{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:24px; gap:18px;}
+  .logo-box{width:76px; height:76px; border-radius:20px; background:linear-gradient(135deg,#2b5ce0,#4f8cff); display:flex; align-items:center; justify-content:center; font-size:30px; font-weight:800; color:#fff; box-shadow:0 12px 30px rgba(43,92,224,.35);}
+  #tela-login h1{font-size:18px; margin:4px 0 0; text-align:center;}
+  #tela-login p{font-size:13px; color:var(--text2); margin:0; text-align:center;}
+  #senha-input{
+    width:100%; max-width:280px; padding:16px; border-radius:14px; border:2px solid var(--border);
+    background:var(--panel); color:var(--text); font-size:20px; text-align:center; letter-spacing:4px;
+    outline:none;
+  }
+  #senha-input:focus{border-color:var(--accent);}
+  #btn-entrar{
+    width:100%; max-width:280px; padding:15px; border-radius:14px; border:none;
+    background:var(--accent); color:#fff; font-size:16px; font-weight:700; cursor:pointer;
+  }
+  #login-erro{color:var(--danger); font-size:13px; display:none;}
+
+  /* ===== APP ===== */
+  #app{flex:1; display:none; flex-direction:column; min-height:0;}
+  header{
+    padding:14px 16px calc(14px + env(safe-area-inset-top)*0); display:flex; align-items:center; gap:10px;
+    background:var(--panel); border-bottom:1px solid var(--border); flex-shrink:0;
+  }
+  header .htitle{flex:1;}
+  header h1{font-size:15px; margin:0; font-weight:800;}
+  header .sub{font-size:11.5px; color:var(--text2); margin-top:1px;}
+  .icon-btn{background:var(--panel2); border:1px solid var(--border); color:var(--text); width:38px; height:38px; border-radius:10px; font-size:16px; display:flex; align-items:center; justify-content:center; cursor:pointer;}
+
+  #lista-wrap{flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:12px 12px 100px;}
+  .setor-head{font-size:11px; font-weight:800; color:var(--text2); letter-spacing:.6px; text-transform:uppercase; margin:14px 4px 8px;}
+  .setor-head:first-child{margin-top:2px;}
+
+  .item-card{
+    background:var(--panel); border:2px solid var(--border); border-radius:16px; padding:14px;
+    margin-bottom:10px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:border-color .12s, background .12s;
+  }
+  .item-card.sel{border-color:var(--accent); background:var(--panel2);}
+  .item-check{
+    width:26px; height:26px; border-radius:50%; border:2px solid var(--border); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:14px; color:transparent; transition:all .12s;
+  }
+  .item-card.sel .item-check{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .item-info{flex:1; min-width:0;}
+  .item-dest{font-size:15px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .item-desc{font-size:12.5px; color:var(--text2); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .item-tags{display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;}
+  .item-tag{font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:99px; background:var(--panel2); color:var(--text2); border:1px solid var(--border);}
+  .item-tag.bat{background:rgba(186,117,23,.18); color:#e0a940; border-color:transparent;}
+
+  #vazio{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:40px; text-align:center;}
+  #vazio .em{font-size:52px;}
+  #vazio h2{font-size:16px; margin:0;}
+  #vazio p{font-size:13px; color:var(--text2); margin:0;}
+
+  #barra-confirmar{
+    position:fixed; left:0; right:0; bottom:0; padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(to top, var(--bg) 60%, transparent); display:none;
+  }
+  #barra-confirmar.show{display:block;}
+  #btn-confirmar{
+    width:100%; padding:16px; border-radius:16px; border:none; background:var(--accent); color:#fff;
+    font-size:16px; font-weight:800; cursor:pointer; box-shadow:0 10px 30px rgba(43,92,224,.4);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  #btn-confirmar:active{transform:scale(.98);}
+
+  #file-camera{display:none;}
+
+  /* overlay de progresso durante upload */
+  #overlay-upload{
+    position:fixed; inset:0; background:rgba(15,17,23,.92); display:none; flex-direction:column;
+    align-items:center; justify-content:center; gap:14px; z-index:50;
+  }
+  #overlay-upload.show{display:flex;}
+  .spinner{width:44px; height:44px; border:4px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  #overlay-upload p{font-size:14px; color:var(--text2); margin:0;}
+
+  /* toast */
+  #toast{
+    position:fixed; left:16px; right:16px; bottom:calc(20px + env(safe-area-inset-bottom)); z-index:60;
+    background:var(--panel2); border:1px solid var(--border); border-radius:14px; padding:14px 16px;
+    display:flex; align-items:center; gap:10px; font-size:13.5px; font-weight:700;
+    transform:translateY(120%); transition:transform .25s ease; box-shadow:0 12px 30px rgba(0,0,0,.4);
+  }
+  #toast.show{transform:translateY(0);}
+  #toast.ok{border-color:var(--ok);} #toast.ok .ti{color:var(--ok);}
+  #toast.err{border-color:var(--danger);} #toast.err .ti{color:var(--danger);}
+</style>
+</head>
+<body>
+
+<div id="tela-login">
+  <div class="logo-box">VX</div>
+  <h1>Confirmação de Saída</h1>
+  <p>Digite a senha do estoque para continuar</p>
+  <input id="senha-input" type="password" placeholder="••••••••" autocomplete="off">
+  <button id="btn-entrar" onclick="tentarLogin()">Entrar</button>
+  <div id="login-erro">Senha incorreta.</div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="htitle">
+      <h1>Confirmação de Saída</h1>
+      <div class="sub" id="contador-sub">Carregando…</div>
+    </div>
+    <button class="icon-btn" onclick="carregarPendentes()" title="Atualizar">↺</button>
+  </header>
+
+  <div id="lista-wrap"><div id="lista"></div></div>
+
+  <div id="vazio" style="display:none">
+    <div class="em">✅</div>
+    <h2>Tudo confirmado!</h2>
+    <p>Nenhum envio pendente de confirmação agora.</p>
+  </div>
+</div>
+
+<div id="barra-confirmar">
+  <button id="btn-confirmar" onclick="iniciarFoto()">📷 Confirmar e tirar foto</button>
+</div>
+
+<input type="file" id="file-camera" accept="image/*" capture="environment">
+
+<div id="overlay-upload">
+  <div class="spinner"></div>
+  <p id="overlay-texto">Enviando confirmação…</p>
+</div>
+
+<div id="toast"><span class="ti">●</span><span id="toast-msg"></span></div>
+
+<script>
+const SB_URL='https://llfiwklxinautxoujpre.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxsZml3a2x4aW5hdXR4b3VqcHJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5MDUzNTAsImV4cCI6MjEwNDQ4MTM1MH0.3dLtdv0Hvf93jXQHy2mjOTr4BJoCMHF_MzwUVEI5o38';
+const H={apikey:SB_KEY, Authorization:'Bearer '+SB_KEY, 'Content-Type':'application/json'};
+const SENHA='estoque2026';
+const BUCKET='confirmacao-saida-fotos';
+
+let pendentes=[];
+let selecionadoId=null;
+
+// registra o service worker (instalabilidade + abertura instantânea)
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+
+function hojeLocal(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function tentarLogin(){
+  var v=document.getElementById('senha-input').value;
+  if(v===SENHA){
+    sessionStorage.setItem('cs_auth','1');
+    document.getElementById('tela-login').style.display='none';
+    document.getElementById('app').style.display='flex';
+    carregarPendentes();
+  } else {
+    document.getElementById('login-erro').style.display='block';
+  }
+}
+document.getElementById('senha-input').addEventListener('keydown',function(e){ if(e.key==='Enter') tentarLogin(); });
+
+function toast(msg,tipo){
+  var t=document.getElementById('toast');
+  document.getElementById('toast-msg').textContent=msg;
+  t.className='show '+(tipo||'');
+  clearTimeout(window._toastT);
+  window._toastT=setTimeout(function(){ t.className=''; },3000);
+}
+
+async function carregarPendentes(){
+  var sub=document.getElementById('contador-sub');
+  sub.textContent='Carregando…';
+  try{
+    var hoje=hojeLocal();
+    var url=SB_URL+'/rest/v1/protocolo_envios?select=id,setor,destino,descricao_item,tem_bateria,status_envio,data_saida_calculada&deleted_at=is.null&etapa=eq.GERENCIAR&saida_confirmada_em=is.null&data_saida_calculada=lte.'+hoje+'&order=setor.asc,destino.asc&limit=300';
+    var res=await fetch(url,{headers:H});
+    if(!res.ok) throw new Error('Falha ao carregar (HTTP '+res.status+')');
+    var todos=await res.json();
+    // filtro fino em JS: status "ENTREGUE"/"AGUARDANDO SAÍDA" tem espaço+acento, mais
+    // seguro comparar aqui do que confiar em URL-encoding de texto assim.
+    pendentes=todos.filter(function(r){ return r.status_envio!=='ENTREGUE' && r.status_envio!=='AGUARDANDO SAÍDA'; });
+    render();
+  }catch(e){
+    sub.textContent='Erro ao carregar';
+    toast('Não consegui carregar a lista. Puxe pra atualizar.','err');
+  }
+}
+
+function render(){
+  var lista=document.getElementById('lista');
+  var vazio=document.getElementById('vazio');
+  var wrap=document.getElementById('lista-wrap');
+  var sub=document.getElementById('contador-sub');
+
+  if(!pendentes.length){
+    wrap.style.display='none'; vazio.style.display='flex';
+    sub.textContent='Nada pendente';
+    document.getElementById('barra-confirmar').classList.remove('show');
+    return;
+  }
+  wrap.style.display='block'; vazio.style.display='none';
+  sub.textContent=pendentes.length+' pendente'+(pendentes.length>1?'s':'');
+
+  var porSetor={};
+  pendentes.forEach(function(r){ var s=r.setor||'—'; (porSetor[s]=porSetor[s]||[]).push(r); });
+  var setores=Object.keys(porSetor).sort();
+
+  var html='';
+  setores.forEach(function(s){
+    html+='<div class="setor-head">'+s+' ('+porSetor[s].length+')</div>';
+    porSetor[s].forEach(function(r){
+      var sel=r.id===selecionadoId;
+      html+='<div class="item-card'+(sel?' sel':'')+'" onclick="selecionar(\''+r.id+'\')">'
+        +'<div class="item-check">✓</div>'
+        +'<div class="item-info">'
+        +'<div class="item-dest">'+esc(r.destino||'')+'</div>'
+        +'<div class="item-desc">'+esc(r.descricao_item||'—')+'</div>'
+        +(r.tem_bateria?'<div class="item-tags"><span class="item-tag bat">⚠ Bateria</span></div>':'')
+        +'</div></div>';
+    });
+  });
+  lista.innerHTML=html;
+
+  document.getElementById('barra-confirmar').classList.toggle('show', !!selecionadoId);
+}
+function esc(s){ var d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+
+function selecionar(id){
+  selecionadoId = (selecionadoId===id) ? null : id;
+  render();
+}
+
+function iniciarFoto(){
+  if(!selecionadoId) return;
+  document.getElementById('file-camera').click();
+}
+
+document.getElementById('file-camera').addEventListener('change', async function(e){
+  var file=e.target.files && e.target.files[0];
+  this.value='';
+  if(!file || !selecionadoId) return;
+  var item=pendentes.find(function(r){return r.id===selecionadoId;});
+  if(!item) return;
+  await confirmarComFoto(item, file);
+});
+
+async function confirmarComFoto(item, file){
+  var overlay=document.getElementById('overlay-upload');
+  var txt=document.getElementById('overlay-texto');
+  overlay.classList.add('show');
+  txt.textContent='Enviando foto…';
+  try{
+    var ext=(file.type&&file.type.includes('png'))?'png':'jpg';
+    var path=item.id+'.'+ext;
+    var up=await fetch(SB_URL+'/storage/v1/object/'+BUCKET+'/'+path,{
+      method:'POST',
+      headers:{apikey:SB_KEY, Authorization:'Bearer '+SB_KEY, 'Content-Type':file.type||'image/jpeg', 'x-upsert':'true'},
+      body:file
+    });
+    if(!up.ok) throw new Error('Falha ao enviar a foto (HTTP '+up.status+')');
+
+    txt.textContent='Confirmando saída…';
+    var patch=await fetch(SB_URL+'/rest/v1/protocolo_envios?id=eq.'+item.id,{
+      method:'PATCH', headers:H,
+      body:JSON.stringify({saida_confirmada_em:new Date().toISOString(), status_envio:'AGUARDANDO SAÍDA', foto_confirmacao_path:path})
+    });
+    if(!patch.ok) throw new Error('Falha ao confirmar (HTTP '+patch.status+')');
+
+    pendentes=pendentes.filter(function(r){return r.id!==item.id;});
+    selecionadoId=null;
+    overlay.classList.remove('show');
+    render();
+    toast('✔ '+item.destino+' — liberado! Deixe na cesta informada.','ok');
+  }catch(err){
+    overlay.classList.remove('show');
+    toast('Erro: '+err.message+'. Tente de novo.','err');
+  }
+}
+
+// mantém a sessão logada dentro do próprio app (não do navegador)
+if(sessionStorage.getItem('cs_auth')==='1'){
+  document.getElementById('tela-login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  carregarPendentes();
+}
+</script>
+</body>
+</html>
