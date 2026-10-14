@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Acompanhamento — VX Case</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{
+  --bg:#0f1117;--surface:#1a1d24;--surface2:#1e2128;--surface3:#242830;
+  --border:#2e3340;--text:#e8eaf0;--text2:#8b93a7;--text3:#4a5168;
+  --accent:#2563eb;--accent-glow:rgba(37,99,235,.12);
+  --success:#16a34a;--success-dim:rgba(22,163,74,.12);
+  --warning:#d97706;--warning-dim:rgba(217,119,6,.12);
+  --danger:#dc2626;--danger-dim:rgba(220,38,38,.12);
+  --radius:10px;--radius-sm:8px;
+}
+body.light-mode{
+  --bg:#f4f5f7;--surface:#ffffff;--surface2:#f0f1f3;--surface3:#e4e6ea;
+  --border:#dde1e7;--text:#1a1d23;--text2:#5b5f68;--text3:#8b8f99;
+  --accent:#6366f1;--accent-glow:rgba(99,102,241,.1);
+  --danger:#dc2626;--danger-dim:#fee2e2;
+  --success:#16a34a;--success-dim:#dcfce7;
+  --warning:#d97706;--warning-dim:#fef3c7;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+.topbar{background:rgba(17,17,19,.95);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);padding:0 16px;height:84px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;}
+.alerta-wpp-banner{background:rgba(217,119,6,.12);border-bottom:1px solid #d97706;padding:10px 16px}
+.alerta-wpp-head{font-size:13px;font-weight:700;color:#d97706;margin-bottom:6px}
+.alerta-wpp-lista{display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto}
+.alerta-wpp-item{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12.5px;background:var(--panel,#171a23);border:1px solid var(--border);border-radius:8px;padding:6px 10px}
+.alerta-wpp-quando{color:var(--text2,#8c93a6);font-size:11px;margin-left:6px}
+.alerta-wpp-ok{background:transparent;border:1px solid #22a06b;color:#22a06b;border-radius:6px;padding:3px 10px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.alerta-wpp-ok:hover{background:#22a06b;color:#fff}
+.logo{font-size:15px;font-weight:700;color:var(--text);white-space:nowrap;flex-shrink:0;}
+.logo span{color:var(--accent);}
+.tab-btns{display:flex;gap:2px;background:var(--surface2);border-radius:12px;padding:6px;border:1px solid var(--border);overflow-x:auto;scrollbar-width:none;flex:1;min-width:0;align-items:center;}
+.tab-btns::-webkit-scrollbar{display:none;}
+.tab-btn{border:none;background:transparent;color:var(--text3);font-size:13px;font-weight:500;padding:6px 14px;border-radius:7px;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap;}
+.tab-btn.active{background:var(--accent);color:#fff;}
+.tab-btn:hover:not(.active){background:var(--surface3);color:var(--text);}
+.lixeira-badge{display:inline-block;background:var(--danger);color:#fff;border-radius:99px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:4px;vertical-align:middle;}
+.container{max-width:900px;margin:0 auto;padding:24px 16px;}
+.page{display:none;}
+.page.active{display:block;}
+.filters-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;}
+.filters-bar input,.filters-bar select{padding:9px 13px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:13px;outline:none;font-family:inherit;flex:1;min-width:140px;}
+.cards-list{display:flex;flex-direction:column;gap:12px;}
+.ec{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;}
+.ec-bateria{animation:pulseBateria 1.6s ease-in-out infinite;}
+@keyframes pulseBateria{
+  0%,100%{border-color:var(--border);box-shadow:none;}
+  50%{border-color:#e0a940;box-shadow:0 0 0 3px rgba(224,169,64,.18);}
+}
+.ec-top{display:flex;align-items:flex-start;gap:12px;}
+.ec-dest{font-size:15px;font-weight:700;color:var(--text);}
+.ec-desc{font-size:12px;color:var(--text2);margin-top:3px;}
+.ec-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.ec-tag{font-size:11px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 8px;}
+.ec-tag.accent{color:var(--accent);border-color:var(--accent-glow);}
+.ec-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.btn-edit{background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:var(--radius-sm);padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit;transition:all .15s;}
+.btn-edit:hover{background:var(--surface3);color:var(--text);}
+.ec-edit{display:none;margin-top:14px;border-top:1px solid var(--border);padding-top:14px;}
+.edit-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+.edit-grid .field.full{grid-column:1/-1;}
+.field label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:13px;outline:none;font-family:inherit;resize:vertical;}
+.btn-save{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text3);}
+.ei{font-size:40px;margin-bottom:12px;}
+.status-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;white-space:nowrap;flex-shrink:0;}
+.badge-aguardando{background:var(--warning-dim);color:var(--warning);}
+.badge-transito{background:var(--accent-glow);color:var(--accent);}
+.badge-atrasado{background:var(--danger-dim);color:var(--danger);}
+.badge-entregue{background:var(--success-dim);color:var(--success);}
+.badge-nao-liberado{background:rgba(139,93,167,.15);color:#c084fc;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 20px;font-size:13px;font-weight:500;z-index:9999;display:none;animation:fadeIn .2s;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+/* ===== REDESIGN: lista organizada ===== */
+:root{--bad-t:#ff7b7b;--acc-t:#9db9f5;--grp:#161922;--chip:#252932;--tb-bg:#12141b;--roxo:#c084fc}
+body.light-mode{--bad-t:#b91c1c;--acc-t:#4338ca;--grp:#eceef2;--chip:#eef0f4;--tb-bg:#ffffff;--roxo:#7e22ce}
+body{font-size:13px;font-variant-numeric:tabular-nums}
+.hdr{height:56px;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid var(--border);background:var(--tb-bg);position:sticky;top:0;z-index:100}
+.hdr .logo{font-size:14px}.hdr .logo span{color:var(--text2);font-weight:500}
+.seg{display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:3px;overflow-x:auto;scrollbar-width:none;min-width:0}
+.seg::-webkit-scrollbar{display:none}
+.sg{border:none;background:transparent;color:var(--text2);font:inherit;font-weight:500;padding:6px 12px;border-radius:6px;cursor:pointer;display:flex;gap:7px;align-items:center;white-space:nowrap}
+.sg:hover:not(.active){background:var(--surface3);color:var(--text)}
+.sg.active{background:var(--accent);color:#fff}
+.cnt{font-size:11px;font-weight:700;padding:1px 7px;border-radius:99px;background:var(--surface3);color:var(--text2)}
+.cnt.red{background:var(--danger);color:#fff}.cnt.grn{background:var(--success);color:#fff}.cnt.rox{background:#9333ea;color:#fff}
+.sg.active .cnt{background:rgba(255,255,255,.25);color:#fff}
+.sp{flex:1}
+.srch{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0 10px;width:270px;height:34px;color:var(--text3)}
+.srch input{flex:1;min-width:0;background:transparent;border:none;outline:none;color:var(--text);font:inherit}
+.srch kbd{font:inherit;font-size:10px;border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+.ib{width:34px;height:34px;border:1px solid var(--border);background:var(--surface);border-radius:8px;color:var(--text2);cursor:pointer;font:inherit;font-size:15px;display:grid;place-items:center}
+.ib:hover{background:var(--surface3);color:var(--text)}
+.menu{position:relative}.pop{display:none;position:absolute;right:0;top:40px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;min-width:230px;z-index:200;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.pop.on{display:block}.pop button{display:block;width:100%;text-align:left;background:transparent;border:none;color:var(--text);font:inherit;padding:8px 10px;border-radius:6px;cursor:pointer}.pop button:hover{background:var(--surface3)}
+.container{max-width:none;margin:0;padding:18px 20px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:3px;cursor:pointer;min-width:0}
+.kpi small{color:var(--text2);font-size:12px}.kpi strong{font-size:24px;line-height:1.1}.kpi em{font-style:normal;font-size:11.5px;color:var(--text2);white-space:nowrap}
+.kpi.bad{border-color:var(--danger)}.kpi.bad strong{color:var(--bad-t)}.kpi.warn strong{color:var(--warning)}
+.fbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{padding:5px 11px;border-radius:99px;border:1px solid var(--border);color:var(--text2);background:var(--surface);font:inherit;font-size:12px;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--accent-glow);border-color:var(--accent);color:var(--acc-t)}
+.fbar select,.fbar input[type=date]{padding:6px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text2);font:inherit;font-size:12px}
+.tw{border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow-x:auto}
+table.tbl{border-collapse:collapse;width:100%;white-space:nowrap}
+.tbl th{height:36px;background:var(--surface2);color:var(--text3);font-size:11px;font-weight:600;text-align:left;padding:0 12px;border-bottom:1px solid var(--border)}
+.tbl th.ar,.tbl td.ar{text-align:right}
+.tbl td{height:62px;padding:0 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr.gh td{height:36px;background:var(--grp);font-weight:600;cursor:pointer;user-select:none}
+.tbl tr.gh .n{background:var(--surface3);color:var(--text2);border-radius:99px;padding:1px 8px;font-size:11px;margin-left:8px}
+.tbl tr.gh .rl{float:right;color:var(--text3);font-weight:500;font-size:11.5px}
+.tbl tbody.fechado tr.r{display:none}
+.tbl tr.r.late td:first-child{box-shadow:inset 3px 0 0 var(--danger)}
+.tbl tbody:last-child tr:last-child td{border-bottom:0}
+.dn{font-weight:700;font-size:14px;display:flex;gap:7px;align-items:center}
+.sb{color:var(--text2);font-size:12px;margin-top:3px}.sb b{color:var(--acc-t);font-weight:600}
+.mt{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px}.mt.bat{background:var(--warning-dim);color:var(--warning)}.mt.ed{background:var(--success-dim);color:var(--success)}
+.it{display:flex;gap:6px}.it span{background:var(--chip);border:1px solid var(--border);border-radius:6px;padding:4px 9px;font-size:12.5px}.it span b{color:var(--acc-t);margin-right:5px}
+.obs{font-size:11.5px;color:var(--text3);margin-top:4px}
+.tp{font-weight:600}.cdr{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--text2);margin-top:3px;cursor:copy}
+.cdr:hover{color:var(--acc-t)}.semr{color:var(--warning);font-size:12px}
+.pv b{font-weight:700}.pv small{display:block;color:var(--text3);font-size:11.5px;margin-top:3px}
+.sit{font-weight:700;font-size:12px;padding:3px 10px;border-radius:99px;display:inline-block}
+.sit.bad{background:var(--danger-dim);color:var(--bad-t)}.sit.am{background:var(--warning-dim);color:var(--warning)}.sit.ok{background:var(--success-dim);color:var(--success)}
+.sit.mut{background:transparent;color:var(--text3);font-weight:500;padding-left:0}.sit.rx{background:rgba(147,51,234,.15);color:var(--roxo)}
+.bt{border:1px solid var(--border);background:var(--surface2);color:var(--text2);border-radius:7px;padding:5px 9px;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap;margin-left:4px}
+.bt:hover{background:var(--surface3);color:var(--text)}.bt.d{border-color:var(--danger);color:var(--bad-t)}
+.vazio{text-align:center;padding:60px 20px;color:var(--text3)}.vazio a{color:var(--acc-t);cursor:pointer;text-decoration:underline}
+.dov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:290;display:none}.dov.on{display:block}
+.drw{position:fixed;top:0;right:0;bottom:0;width:min(460px,100vw);transform:translateX(100%);transition:transform .2s;background:var(--surface);border-left:1px solid var(--border);z-index:300;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:16px}
+.drw.on{transform:none;box-shadow:-20px 0 50px rgba(0,0,0,.4)}
+.alerta-wpp-item{background:var(--surface);color:var(--text)}.alerta-wpp-quando{color:var(--text2)}
+@media (prefers-reduced-motion:reduce){.drw{transition:none}}
+.dh{display:flex;align-items:flex-start;gap:10px}.dh h2{font-size:17px}.dh p{color:var(--text2);margin-top:3px;font-size:12px}
+.tl{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--surface2)}
+.ev{display:grid;grid-template-columns:18px 1fr auto;gap:10px;padding:6px 0;position:relative;align-items:start}
+.ev::before{content:"";position:absolute;left:5px;top:22px;bottom:-6px;width:2px;background:var(--border)}.ev:last-child::before{display:none}
+.ev .dot{width:12px;height:12px;border-radius:50%;background:var(--success);margin-top:3px}
+.ev.now .dot{background:var(--accent);box-shadow:0 0 0 4px var(--accent-glow)}.ev.late .dot{background:var(--danger);box-shadow:0 0 0 4px var(--danger-dim)}
+.ev.pend .dot{background:var(--surface3);border:2px solid var(--border)}
+.ev b{font-weight:600}.ev small{display:block;color:var(--text2);font-size:11.5px;margin-top:1px}.ev time{color:var(--text3);font-size:11.5px}.ev.late b{color:var(--bad-t)}
+.aviso{border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:12px;color:var(--text2)}.aviso b{color:var(--success)}.aviso.no b{color:var(--warning)}
+.drw .edit-grid{margin-bottom:0}
+.drw .foot{margin-top:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+/* ===== cards (vistas Etiqueta e Rota) ===== */
+.vt{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.vt button{background:var(--surface);border:none;color:var(--text2);font:inherit;font-size:12px;padding:6px 12px;cursor:pointer}
+.vt button.on{background:var(--accent-glow);color:var(--acc-t);font-weight:600}
+.grpc{margin-bottom:20px}
+.gl{display:flex;align-items:center;gap:10px;margin:0 0 12px;font-weight:600;cursor:pointer;user-select:none}
+.gl .n{background:var(--surface3);color:var(--text2);border-radius:99px;padding:1px 8px;font-size:11px}
+.gl .rl{color:var(--text3);font-weight:500;font-size:12px}.gl i{flex:1;height:1px;background:var(--border)}
+.grpc.fechado .cgrid{display:none}
+.cgrid{display:grid;gap:16px}
+.cgrid.v-etiqueta{grid-template-columns:repeat(auto-fill,minmax(min(500px,100%),1fr))}
+.cgrid.v-rota{grid-template-columns:repeat(auto-fill,minmax(min(560px,100%),1fr))}
+.cgrid .it{flex-wrap:wrap}.cgrid .it span{max-width:100%}
+.tk{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:14px;position:relative;overflow:hidden}
+.stub{width:72px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:12px 6px;position:relative;color:#fff;text-align:center}
+.stub strong{font-size:30px;line-height:1;font-weight:800}.stub strong.sm{font-size:21px}.stub small{font-size:10px;font-weight:600;opacity:.92;line-height:1.2}
+.stub.late{background:linear-gradient(160deg,#7f1d1d,#b91c1c)}.stub.today{background:linear-gradient(160deg,#92400e,#d97706)}
+.stub.go{background:linear-gradient(160deg,#1e3a8a,#2563eb)}.stub.wait{background:linear-gradient(160deg,#374151,#4b5563)}
+.stub.ok{background:linear-gradient(160deg,#14532d,#16a34a)}.stub.rx{background:linear-gradient(160deg,#581c87,#9333ea)}
+.stub::after{content:"";position:absolute;right:-1px;top:14px;bottom:14px;border-right:2px dashed var(--bg)}
+.stub::before,.stub .tkn{content:"";position:absolute;right:-9px;width:18px;height:18px;border-radius:50%;background:var(--bg);z-index:2}
+.stub::before{top:-9px}.stub .tkn{bottom:-9px}
+.tb2{flex:1;padding:14px 16px 12px 16px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.tr1{display:flex;align-items:flex-start;gap:8px}.tr1 .dn{font-size:16px;flex:1;min-width:0;flex-wrap:wrap;row-gap:4px;white-space:normal;line-height:1.25}
+.sc{font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--accent-glow);color:var(--acc-t);white-space:nowrap}
+.rp{color:var(--text2);font-size:12px;margin-top:-4px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;white-space:normal}
+.recv{font-size:12px;color:var(--success);margin-top:-2px}.recv b{font-weight:700}.recv span{font-weight:800;margin-right:4px}
+.bar{height:5px;border-radius:9px;background:var(--surface3);position:relative;margin-top:2px}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:9px}
+.bar u{position:absolute;top:-4px;width:13px;height:13px;border-radius:50%;background:var(--surface);border:3px solid;transform:translateX(-50%)}
+.dts{display:flex;justify-content:space-between;color:var(--text3);font-size:11px;margin-top:-4px;white-space:nowrap}.dts b{color:var(--text2);font-weight:600}
+.ft2{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:10px;margin-top:auto}
+.acs{display:flex;gap:6px;margin-left:auto}
+.ft2 .tp,.rf .tp{font-weight:700;white-space:nowrap}
+.ft2 .cd,.rf .cd{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--text2);white-space:nowrap;cursor:copy}
+.ft2 .bt,.rf .bt{margin:0;padding:5px 10px}
+.rc{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;display:flex;flex-direction:column}
+.rt{padding:16px 20px 12px;display:flex;align-items:flex-start;gap:12px;background:linear-gradient(180deg,var(--c1),transparent)}
+.rt h3{font-size:19px;font-weight:800;letter-spacing:-.2px;white-space:normal;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;line-height:1.2}
+.rt .sub{color:var(--text2);font-size:12.5px;margin-top:4px;white-space:normal}
+.rt>div:not(.ph){min-width:0}.rt .sit{flex:none}.rt .sub b{color:var(--c2);font-weight:600}
+.ph{width:44px;height:44px;border-radius:12px;flex:none;display:grid;place-items:center;font-weight:800;font-size:14px;background:var(--c1);color:var(--c2);border:1px solid var(--c2)}
+.stp{display:grid;grid-template-columns:repeat(4,1fr);padding:2px 20px 14px;position:relative}
+.stp::before{content:"";position:absolute;left:12.5%;right:12.5%;top:8px;height:2px;background:var(--border)}
+.s{position:relative;text-align:center;font-size:11px;color:var(--text3);white-space:nowrap}
+.s i{display:block;width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--border);margin:2px auto 7px;position:relative;z-index:1}
+.s.ok i{background:var(--success);border-color:var(--success)}.s.now i{border-color:var(--c2);box-shadow:0 0 0 4px var(--c1)}
+.s.lt i{border-color:var(--danger);background:var(--danger);box-shadow:0 0 0 4px var(--danger-dim)}
+.s b{display:block;color:var(--text);font-weight:600;font-size:12px}.s.now b{color:var(--c2)}.s.lt b{color:var(--bad-t)}
+.rb{padding:2px 20px 14px;display:flex;flex-direction:column;gap:7px;flex:1}
+.li{display:flex;align-items:center;gap:12px;white-space:nowrap}
+.li b{min-width:38px;text-align:center;font-size:15px;font-weight:800;color:var(--acc-t);background:var(--accent-glow);border-radius:8px;padding:3px 0}
+.rf{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;padding:12px 20px;border-top:1px solid var(--border);background:var(--surface2)}
+.rf .cd{padding:3px 8px;border:1px dashed var(--border);border-radius:6px}
+.lab{--c1:rgba(37,99,235,.16);--c2:#6b9bff}.gar{--c1:rgba(168,85,247,.16);--c2:#c084fc}.rh{--c1:rgba(236,72,153,.15);--c2:#f472b6}
+.cc{--c1:rgba(20,184,166,.15);--c2:#2dd4bf}.man{--c1:rgba(249,115,22,.15);--c2:#fb923c}.fin{--c1:rgba(234,179,8,.15);--c2:#facc15}
+body.light-mode .lab{--c2:#1d4ed8}body.light-mode .gar{--c2:#7e22ce}body.light-mode .rh{--c2:#be185d}
+body.light-mode .cc{--c2:#0f766e}body.light-mode .man{--c2:#c2410c}body.light-mode .fin{--c2:#a16207}
+
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.srch{width:170px}.hdr{gap:8px;padding:0 10px}.hdr .logo{display:none}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="logo">Acompanhamento <span>· Protocolo Saída</span></div>
+  <div class="seg">
+    <button class="sg active" id="tab-aguardando" onclick="irPara('aguardando',this)">Aguardando saída<span class="cnt" id="count-aguardando" style="display:none;">0</span></button>
+    <button class="sg" id="tab-transito" onclick="irPara('transito',this)">Em trânsito<span class="cnt" id="count-transito" style="display:none;">0</span></button>
+    <button class="sg" id="tab-atrasado" onclick="irPara('atrasado',this)">Atrasado<span class="cnt red" id="count-atrasado" style="display:none;">0</span></button>
+    <button class="sg" id="tab-recebidos" onclick="irPara('recebidos',this)">Recebidos<span class="cnt grn" id="count-recebidos" style="display:none;">0</span></button>
+    <button class="sg" id="tab-nao-liberado" onclick="irPara('nao-liberado',this)">Não liberado<span class="cnt rox" id="count-nao-liberado" style="display:none;">0</span></button>
+  </div>
+  <div class="sp"></div>
+  <div class="srch">&#8981;<input type="text" id="g-busca" placeholder="Buscar destino, item, rastreio" oninput="renderAba(abaAtual)"><kbd>/</kbd></div>
+  <button class="ib" title="Atualizar" onclick="atualizarManual()">&#8635;</button>
+  <button class="ib" title="Tema claro/escuro" onclick="toggleTema()">&#9680;</button>
+  <div class="menu"><button class="ib" title="Mais" onclick="toggleMenu(event)">&#8943;</button>
+    <div class="pop" id="menu-pop"><button onclick="fecharMenu();diagnosticoSync()">Diagnóstico de sincronização</button></div></div>
+</div>
+
+<div id="alertasWpp" style="display:none"></div>
+
+<div class="container">
+  <div class="kpis" id="kpis"></div>
+  <div class="fbar">
+    <div class="chips" id="chips-setor"></div>
+    <div class="sp"></div>
+    <span id="datas-rec" style="display:none;color:var(--text2);font-size:12px;">De <input type="date" id="re-data-ini" onchange="renderAba(abaAtual)"> até <input type="date" id="re-data-fim" onchange="renderAba(abaAtual)"></span>
+    <div class="vt" id="vt"><button data-v="etiqueta" onclick="setVista('etiqueta')">Etiqueta</button><button data-v="rota" onclick="setVista('rota')">Rota</button><button data-v="lista" onclick="setVista('lista')">Lista</button></div>
+    <select id="g-transp" onchange="setTransp(this.value)"></select>
+    <button class="chip" id="chip-bat" onclick="toggleBat()">Só bateria</button>
+  </div>
+  <div class="page active" id="page-aguardando"><div id="tbody-aguardando"></div></div>
+  <div class="page" id="page-transito"><div id="tbody-transito"></div></div>
+  <div class="page" id="page-atrasado"><div id="tbody-atrasado"></div></div>
+  <div class="page" id="page-recebidos"><div id="tbody-recebidos"></div></div>
+  <div class="page" id="page-nao-liberado"><div id="tbody-nao-liberado"></div></div>
+</div>
+
+<div class="dov" id="drawer-ov" onclick="fecharDrawer()"></div>
+<aside class="drw" id="drawer" aria-label="Editar envio"></aside>
+
+<div class="toast" id="toast"></div>
+
+<div id="qr-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border-radius:16px;padding:28px;max-width:320px;width:90%;position:relative;text-align:center;">
+    <button onclick="fecharQR()" style="position:absolute;top:12px;right:12px;background:transparent;border:none;font-size:20px;cursor:pointer;color:var(--text2);">✕</button>
+    <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px;" id="qr-modal-destino"></div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:16px;" id="qr-modal-desc"></div>
+    <div id="qr-modal-container" style="display:flex;justify-content:center;margin-bottom:16px;"></div>
+    <button onclick="enviarQRWhatsApp()" id="btn-enviar-qr" style="margin-top:8px;width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">📤 Enviar para o gestor do PDV</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SB_URL='https://llfiwklxinautxoujpre.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxsZml3a2x4aW5hdXR4b3VqcHJlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5MDUzNTAsImV4cCI6MjEwNDQ4MTM1MH0.3dLtdv0Hvf93jXQHy2mjOTr4BJoCMHF_MzwUVEI5o38';
+const supa=window.supabase.createClient(SB_URL,SB_KEY);
+var sb=supa; // usado pelos alertas de WhatsApp (antes 'sb' nao existia e os alertas nunca apareciam)
+const H={'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=minimal'};
+
+var todoEnvios=[];
+var abaAtual='aguardando';
+
+function irPara(aba,btn){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.sg').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('page-'+aba).classList.add('active');
+  var b=btn||document.getElementById('tab-'+aba); if(b) b.classList.add('active');
+  abaAtual=aba;
+  renderAba(aba);
+}
+
+async function atualizarManual(){
+  // Atualização manual (setinha): recarrega os dados normalmente — dispara WhatsApp
+  // igual à sincronização automática. Antes isso ficava 4s em silêncio de propósito
+  // (pra não floodar num acúmulo antigo), mas isso passou a calar justamente os avisos
+  // que a pessoa queria forçar ao clicar em atualizar. Não faz mais sentido agora.
+  await carregarTodos();
+  showToast('Atualizado','success');
+}
+async function carregarTodos(){
+  // Mostra cache imediatamente
+  var cached=sessionStorage.getItem('cache_acomp');
+  if(cached){
+    todoEnvios=JSON.parse(cached);
+    atualizarBadges();
+    renderAba(abaAtual);
+  }
+  try{
+    var res=await fetch(SB_URL+'/rest/v1/protocolo_envios?select=id,setor,destino,descricao_item,status_envio,etapa,data_entrega,data_saida_calculada,prazo,codigo_bipagem,registrado_por,entregue,nome_recebedor,nome_quem_recebeu_loja,bipado_em,transportadora,rastreio,observacao,editado_em,tem_bateria,saida_confirmada_em,notificado_em&deleted_at=is.null&order=data_saida_calculada.asc&limit=500',{headers:H});
+    todoEnvios=await res.json();
+    try{sessionStorage.setItem('cache_acomp',JSON.stringify(todoEnvios));}catch(e){}
+    atualizarBadges();
+    renderAba(abaAtual);
+    sincronizarRastreios();
+  }catch(e){console.error(e);}
+}
+
+function atualizarBadges(){
+  var hoje=new Date();hoje.setHours(0,0,0,0);
+  var counts={aguardando:0,transito:0,atrasado:0,recebidos:0,'nao-liberado':0};
+  todoEnvios.forEach(function(r){
+    var status=r.status_envio;
+    if(status==='ENTREGUE'){counts.recebidos++;}
+    else if(status==='EM TRÂNSITO'){counts.transito++;}
+    else if(status==='ATRASADO'){counts.atrasado++;}
+    else if(status==='NÃO LIBERADO'){counts['nao-liberado']++;}
+    else if(status==='AGUARDANDO SAÍDA'){counts.aguardando++;}
+  });
+  ['aguardando','transito','atrasado','recebidos','nao-liberado'].forEach(function(k){
+    var el=document.getElementById('count-'+k);
+    if(el){el.textContent=counts[k];el.style.display=counts[k]>0?'inline-block':'none';}
+  });
+}
+
+function passaStatus(r,aba){
+  var st=r.status_envio;
+  return (aba==='aguardando'&&st==='AGUARDANDO SAÍDA')||(aba==='transito'&&st==='EM TRÂNSITO')||(aba==='atrasado'&&st==='ATRASADO')||(aba==='recebidos'&&st==='ENTREGUE')||(aba==='nao-liberado'&&st==='NÃO LIBERADO');
+}
+function filtrar(aba,ignoraSetor){
+  var be=document.getElementById('g-busca');
+  var busca=be?be.value.toLowerCase().trim():'';
+  return todoEnvios.filter(function(r){
+    if(!passaStatus(r,aba)) return false;
+    if(!ignoraSetor&&fSetor&&r.setor!==fSetor) return false;
+    if(fTransp&&(r.transportadora||'')!==fTransp) return false;
+    if(fBat&&!r.tem_bateria) return false;
+    if(busca){
+      var tx=[r.destino,r.descricao_item,r.setor,r.rastreio,r.transportadora,r.registrado_por,r.observacao].join(' ').toLowerCase();
+      if(tx.indexOf(busca)<0) return false;
+    }
+    if(aba==='recebidos'){
+      var dataIni=document.getElementById('re-data-ini')?document.getElementById('re-data-ini').value:'';
+      var dataFim=document.getElementById('re-data-fim')?document.getElementById('re-data-fim').value:'';
+      if(dataIni&&r.data_entrega<dataIni) return false;
+      if(dataFim&&r.data_entrega>dataFim) return false;
+    }
+    return true;
+  });
+}
+
+function statusBadge(status){
+  var map={
+    'AGUARDANDO SAÍDA':'badge-aguardando',
+    'EM TRÂNSITO':'badge-transito',
+    'ATRASADO':'badge-atrasado',
+    'ENTREGUE':'badge-entregue',
+    'NÃO LIBERADO':'badge-nao-liberado'
+  };
+  var cls=map[status]||'badge-aguardando';
+  return '<span class="status-badge '+cls+'">'+(status||'AGUARDANDO SAÍDA')+'</span>';
+}
+
+async function reenviarNotificacao(id){
+  var item=todoEnvios.find(function(r){return r.id===id;});
+  if(!item){ alert('Item não encontrado.'); return; }
+  if(!confirm('Reenviar a mensagem de status pro grupo do WhatsApp desse item agora?')) return;
+  try{
+    await enviarWPPAcomp(item);
+    showToast('Mensagem reenviada.','success');
+  }catch(e){ showToast('Falha ao reenviar.','error'); }
+}
+
+// ===================== REDESIGN: renderizacao (so visual) =====================
+var gruposFechados={}, fSetor='', fTransp='', fBat=false, fVista='etiqueta';
+try{var _v=localStorage.getItem('acomp_vista'); if(_v==='etiqueta'||_v==='rota'||_v==='lista') fVista=_v;}catch(e){}
+var SETORES=['CALL CENTER','FINANCEIRO','GARANTIA','LABORATÓRIO','MANUTENÇÃO','RH'];
+var TRANSPS=['BRASPRESS','GOLLOG','CORREIOS','NOBRE','OUTRA'];
+var ABAS_ROT={'aguardando':'Aguardando saída','transito':'Em trânsito','atrasado':'Atrasado','recebidos':'Recebidos','nao-liberado':'Não liberado'};
+
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function pad2(n){return (n<10?'0':'')+n;}
+function hojeISO(){var d=new Date();return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());}
+function isoMs(iso){var p=iso.split('-');return Date.UTC(+p[0],+p[1]-1,+p[2]);}
+function diasEntre(a,b){return Math.round((isoMs(b)-isoMs(a))/86400000);}
+function somaDias(iso,n){var d=new Date(isoMs(iso)+n*86400000);return d.getUTCFullYear()+'-'+pad2(d.getUTCMonth()+1)+'-'+pad2(d.getUTCDate());}
+function fmtDM(iso){return iso?iso.slice(8,10)+'/'+iso.slice(5,7):'';}
+function fmtDMA(iso){return iso?iso.slice(8,10)+'/'+iso.slice(5,7)+'/'+iso.slice(0,4):'';}
+function fmtDH(ts){return ts?new Date(ts).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';}
+function saidaISO(r){return (r.data_saida_calculada||'').slice(0,10);}
+function previsaoISO(r){var sd=saidaISO(r); if(!sd||r.prazo==null||r.prazo==='') return ''; return somaDias(sd,parseInt(r.prazo)||0);}
+function primeiroNome(r){var n=(r.registrado_por||r.entregue||'').trim(); if(!n) return ''; n=n.split(' ')[0]; return n.charAt(0).toUpperCase()+n.slice(1).toLowerCase();}
+function atrasado(r){var st=r.status_envio; if(st==='ATRASADO') return true; if(st!=='EM TRÂNSITO') return false; var pv=previsaoISO(r); return !!pv&&pv<hojeISO();}
+function diasAtraso(r){var pv=previsaoISO(r); return pv?diasEntre(pv,hojeISO()):0;}
+function pluralDias(d){return d+(d===1?' dia':' dias');}
+
+function partesItens(desc){return (desc||'').trim().split(/\s+\+\s+|\s*;\s*/).filter(Boolean);}
+function parseItem(p){
+  var m=p.match(/^(\d+)\s*(?:x|un\.?|unid\.?|unidades?)?\s+(.+)$/i);
+  if(m) return {q:m[1],t:m[2]};
+  var m2=p.match(/\(?\b(\d+)\s*(?:un\.?|unid\.?|unidades?)\b\.?\)?/i);
+  if(m2){var t=p.replace(m2[0],' ').replace(/\s{2,}/g,' ').trim(); if(t) return {q:m2[1],t:t};}
+  return {q:'',t:p};
+}
+function chipsItens(desc){
+  var ps=partesItens(desc); if(!ps.length) return '<span class="sb">—</span>';
+  return '<div class="it">'+ps.map(function(p){var x=parseItem(p); return '<span>'+(x.q?'<b>'+esc(x.q)+'</b>':'')+esc(x.t)+'</span>';}).join('')+'</div>';
+}
+
+function situacaoHTML(r){
+  var hoje=hojeISO(), st=r.status_envio;
+  if(st==='ENTREGUE') return '<span class="sit ok">Recebido'+(r.nome_quem_recebeu_loja?' por '+esc(r.nome_quem_recebeu_loja):'')+(r.bipado_em?' em '+esc(fmtDH(r.bipado_em)):'')+'</span>';
+  if(st==='NÃO LIBERADO') return '<span class="sit rx">Não liberado</span>';
+  if(st==='AGUARDANDO SAÍDA'){
+    var sd=saidaISO(r); if(!sd) return '<span class="sit mut">—</span>';
+    var d=diasEntre(hoje,sd);
+    if(d<0) return '<span class="sit bad">saída há '+(-d)+'d</span>';
+    if(d===0) return '<span class="sit am">sai hoje</span>';
+    return '<span class="sit mut">sai em '+d+'d</span>';
+  }
+  var pv=previsaoISO(r); if(!pv) return '<span class="sit mut">—</span>';
+  var a=diasEntre(pv,hoje);
+  if(a>0) return '<span class="sit bad">'+pluralDias(a)+'</span>';
+  if(a===0) return '<span class="sit am">vence hoje</span>';
+  return '<span class="sit mut">chega em '+(-a)+'d</span>';
+}
+
+function renderLinha(r){
+  var id=esc(r.id), sd=saidaISO(r), pv=previsaoISO(r), late=atrasado(r), nome=primeiroNome(r);
+  var emTr=(r.status_envio==='EM TRÂNSITO'||r.status_envio==='ATRASADO');
+  var transp=(r.transportadora||r.rastreio)
+    ? (r.transportadora?'<div class="tp">'+esc(r.transportadora)+'</div>':'')+(r.rastreio?'<div class="cdr" title="Clique para copiar" data-c="'+esc(r.rastreio)+'" onclick="copiarRast(this)">'+esc(r.rastreio)+'</div>':'<div class="semr">sem rastreio</div>')
+    : '<span class="semr">sem rastreio</span>';
+  return '<tr class="r'+(late?' late':'')+'">'+
+    '<td><div class="dn">'+esc(r.destino)+(r.tem_bateria?'<span class="mt bat">Bateria</span>':'')+(r.editado_em?'<span class="mt ed">Editado</span>':'')+'</div>'+
+      '<div class="sb"><b>'+esc(r.setor)+'</b>'+(nome?' · '+esc(nome):'')+'</div></td>'+
+    '<td>'+chipsItens(r.descricao_item)+(r.observacao?'<div class="obs">Obs: '+esc(r.observacao)+'</div>':'')+'</td>'+
+    '<td>'+transp+'</td>'+
+    '<td class="pv">'+(pv?'<b>'+fmtDM(pv)+'</b><small>'+(emTr||r.status_envio==='ENTREGUE'?'saiu ':'sai ')+fmtDM(sd)+' +'+(parseInt(r.prazo)||0)+'d</small>':'<span class="sit mut">—</span>')+'</td>'+
+    '<td>'+situacaoHTML(r)+'</td>'+
+    '<td class="ar">'+(late&&r.status_envio!=='ENTREGUE'?'<button class="bt d" onclick="cobrar(\''+id+'\')">Cobrar</button>':'')+
+      (r.codigo_bipagem?'<button class="bt" title="Ver QR" onclick="verQR(\''+id+'\')">QR</button>':'')+
+      '<button class="bt" onclick="abrirDrawer(\''+id+'\')">Editar</button></td>'+
+  '</tr>';
+}
+
+function tabelaHTML(corpo){
+  return '<div class="tw"><table class="tbl"><thead><tr><th>Destino</th><th>O que está sendo enviado</th><th>Transporte</th><th>Previsão</th><th>Situação</th><th class="ar">Ações</th></tr></thead>'+corpo+'</table></div>';
+}
+
+function renderAba(aba){
+  renderResumo(); renderFiltros(aba);
+  var c=document.getElementById('tbody-'+aba);
+  if(!c) return;
+  var dados=filtrar(aba);
+  if(!dados.length){
+    var outras=[];
+    Object.keys(ABAS_ROT).forEach(function(k){ if(k!==aba){var n=filtrar(k).length; if(n) outras.push('<a onclick="irParaAba(\''+k+'\')">'+ABAS_ROT[k]+' ('+n+')</a>');} });
+    var be=document.getElementById('g-busca');
+    c.innerHTML='<div class="vazio">Nenhum registro aqui.'+((be&&be.value.trim()&&outras.length)?'<br><br>Encontrado em: '+outras.join(' · '):'')+'</div>';
+    return;
+  }
+  if(aba==='aguardando'||aba==='transito'||aba==='atrasado'){
+    var grupos={}, ordem=[];
+    dados.forEach(function(r){
+      var key=saidaISO(r)||(r.data_entrega||'').slice(0,10)||'sem-data';
+      if(!grupos[key]){grupos[key]=[];ordem.push(key);}
+      grupos[key].push(r);
+    });
+    ordem.sort(function(a,b){return a.localeCompare(b);});
+    var gr=ordem.map(function(data){var inf=grupoInfo(data); return {g:grupos[data],k:aba+'|'+data,rotulo:inf.rotulo,rel:inf.rel};});
+    if(fVista!=='lista'){
+      c.innerHTML=gr.map(function(x){
+        return '<section class="grpc'+(gruposFechados[x.k]?' fechado':'')+'" data-k="'+esc(x.k)+'"><div class="gl" onclick="toggleGrupoCards(this)"><span class="ar-g">'+(gruposFechados[x.k]?'▸':'▾')+'</span> '+x.rotulo+'<span class="n">'+x.g.length+'</span><span class="rl">saída '+x.rel+'</span><i></i></div><div class="cgrid v-'+fVista+'">'+x.g.map(renderCard).join('')+'</div></section>';
+      }).join('');
+      return;
+    }
+    c.innerHTML=tabelaHTML(gr.map(function(x){
+      return '<tbody class="grp'+(gruposFechados[x.k]?' fechado':'')+'" data-k="'+esc(x.k)+'"><tr class="gh" onclick="toggleGrupoData(this)"><td colspan="6"><span class="ar-g">'+(gruposFechados[x.k]?'▸':'▾')+'</span> '+x.rotulo+'<span class="n">'+x.g.length+'</span><span class="rl">saída '+x.rel+'</span></td></tr>'+x.g.map(renderLinha).join('')+'</tbody>';
+    }).join(''));
+    return;
+  }
+  if(aba==='recebidos'){
+    dados=dados.slice().sort(function(a,b){return String(b.bipado_em||b.data_entrega||'').localeCompare(String(a.bipado_em||a.data_entrega||''));});
+  }
+  if(fVista!=='lista'){ c.innerHTML='<div class="cgrid v-'+fVista+'">'+dados.map(renderCard).join('')+'</div>'; return; }
+  c.innerHTML=tabelaHTML('<tbody>'+dados.map(renderLinha).join('')+'</tbody>');
+}
+
+function grupoInfo(data){
+  var dias=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'], rotulo='Sem data', rel='';
+  if(data!=='sem-data'){
+    var p=data.split('-'), d=diasEntre(hojeISO(),data);
+    rotulo=dias[new Date(+p[0],+p[1]-1,+p[2]).getDay()]+' '+fmtDM(data);
+    rel=d===0?'hoje':d===1?'amanhã':d===-1?'ontem':d<0?'há '+(-d)+' dias':'em '+d+' dias';
+  }
+  return {rotulo:rotulo,rel:rel};
+}
+function toggleGrupoCards(h){
+  var sec=h.parentNode, k=sec.getAttribute('data-k'), fecha=!sec.classList.contains('fechado');
+  sec.classList.toggle('fechado',fecha); gruposFechados[k]=fecha;
+  var a=h.querySelector('.ar-g'); if(a) a.textContent=fecha?'▸':'▾';
+}
+function setVista(v){fVista=v;try{localStorage.setItem('acomp_vista',v);}catch(e){} renderAba(abaAtual);}
+function renderCard(r){return fVista==='rota'?cardRota(r):cardEtiqueta(r);}
+
+function urgencia(r){
+  var hoje=hojeISO(), st=r.status_envio;
+  if(st==='ENTREGUE') return {cls:'ok',big:'✓',small:'recebido'};
+  if(st==='NÃO LIBERADO') return {cls:'rx',big:'!',small:'não liberado'};
+  if(st==='AGUARDANDO SAÍDA'){
+    var sd=saidaISO(r); if(!sd) return {cls:'wait',big:'—',small:'sem data'};
+    var d=diasEntre(hoje,sd);
+    if(d<0) return {cls:'late',big:String(-d),small:(-d===1?'dia':'dias')+' sem sair'};
+    if(d===0) return {cls:'today',big:'hoje',small:'sai hoje'};
+    return {cls:'wait',big:String(d),small:(d===1?'dia':'dias')+' para sair'};
+  }
+  var pv=previsaoISO(r);
+  if(!pv) return {cls:st==='ATRASADO'?'late':'go',big:st==='ATRASADO'?'!':'—',small:st==='ATRASADO'?'atrasado':'sem previsão'};
+  var a=diasEntre(pv,hoje);
+  if(a>0) return {cls:'late',big:String(a),small:(a===1?'dia':'dias')+' de atraso'};
+  if(st==='ATRASADO') return {cls:'late',big:'!',small:'atrasado'};
+  if(a===0) return {cls:'today',big:'hoje',small:'vence a previsão'};
+  return {cls:'go',big:String(-a),small:(-a===1?'dia':'dias')+' para chegar'};
+}
+function barraHTML(r){
+  var sd=saidaISO(r), pv=previsaoISO(r), st=r.status_envio, hoje=hojeISO();
+  if(st==='NÃO LIBERADO'||!sd||!pv) return '';
+  var late=atrasado(r), tot=Math.max(1,diasEntre(sd,pv)), dec=diasEntre(sd,hoje);
+  var pct=st==='ENTREGUE'?100:st==='AGUARDANDO SAÍDA'?0:Math.max(0,Math.min(100,dec/tot*100));
+  var cor=st==='ENTREGUE'?'#22a06b':late?'#ef4444':(pv===hoje?'#d97706':'#2563eb');
+  var bg=late?'linear-gradient(90deg,#2563eb,#ef4444)':cor;
+  var corPv=late?'var(--bad-t)':(pv===hoje?'var(--warning)':'var(--text2)');
+  return '<div class="bar"><i style="width:'+pct+'%;background:'+bg+'"></i><u style="left:'+pct+'%;border-color:'+cor+'"></u></div>'+
+    '<div class="dts"><span>'+(st==='AGUARDANDO SAÍDA'?'sai':'saiu')+' <b>'+fmtDM(sd)+'</b></span><span>previsão <b style="color:'+corPv+'">'+fmtDM(pv)+'</b></span></div>';
+}
+function rodapeCard(r,cl){
+  var late=atrasado(r)&&r.status_envio!=='ENTREGUE', id=esc(r.id);
+  return '<div class="'+cl+'">'+(r.transportadora?'<span class="tp">'+esc(r.transportadora)+'</span>':'')+
+    (r.rastreio?'<span class="cd" title="Clique para copiar" data-c="'+esc(r.rastreio)+'" onclick="copiarRast(this)">'+esc(r.rastreio)+'</span>':'<span class="semr">sem rastreio</span>')+
+    '<span class="acs">'+(late?'<button class="bt d" onclick="cobrar(\''+id+'\')">Cobrar</button>':'')+
+    (r.codigo_bipagem?'<button class="bt" onclick="verQR(\''+id+'\')">QR</button>':'')+
+    '<button class="bt" onclick="abrirDrawer(\''+id+'\')">Editar</button></span></div>';
+}
+function tagsDestino(r){return (r.tem_bateria?'<span class="mt bat">Bateria</span>':'')+(r.editado_em?'<span class="mt ed">Editado</span>':'');}
+function fmtRec(ts){var d=new Date(ts); if(isNaN(d)) return ''; return pad2(d.getDate())+'/'+pad2(d.getMonth()+1)+' às '+pad2(d.getHours())+':'+pad2(d.getMinutes());}
+function recebidoHTML(r){
+  if(!r.nome_quem_recebeu_loja&&!r.bipado_em) return '';
+  return '<div class="recv"><span>✓</span>Recebido'+(r.nome_quem_recebeu_loja?' por <b>'+esc(r.nome_quem_recebeu_loja)+'</b>':'')+(r.bipado_em?' · '+esc(fmtRec(r.bipado_em)):'')+'</div>';
+}
+function cardEtiqueta(r){
+  var u=urgencia(r), nome=primeiroNome(r), reg=(r.data_entrega||'').slice(0,10);
+  return '<div class="tk"><div class="stub '+u.cls+'"><strong'+(u.big.length>3?' class="sm"':'')+'>'+esc(u.big)+'</strong><small>'+esc(u.small)+'</small><i class="tkn"></i></div>'+
+    '<div class="tb2"><div class="tr1"><div class="dn">'+esc(r.destino)+tagsDestino(r)+'</div></div>'+
+    '<div class="rp"><span class="sc">'+esc(r.setor)+'</span>'+(nome?'<span>'+esc(nome)+'</span>':'')+'<span>registrado '+fmtDM(reg)+'</span></div>'+
+    chipsItens(r.descricao_item)+(r.observacao?'<div class="obs" style="margin-top:-4px">Obs: '+esc(r.observacao)+'</div>':'')+
+    barraHTML(r)+recebidoHTML(r)+rodapeCard(r,'ft2')+'</div></div>';
+}
+var SETOR_CLS={'LABORATÓRIO':['lab','LB'],'GARANTIA':['gar','GA'],'RH':['rh','RH'],'CALL CENTER':['cc','CC'],'MANUTENÇÃO':['man','MN'],'FINANCEIRO':['fin','FN']};
+function listaItens(desc){
+  var ps=partesItens(desc); if(!ps.length) return '<div class="li"><b>•</b>—</div>';
+  return ps.map(function(p){var x=parseItem(p); return '<div class="li"><b>'+(x.q?esc(x.q):'•')+'</b>'+esc(x.t)+'</div>';}).join('');
+}
+function passosRota(r){
+  var st=r.status_envio, sd=saidaISO(r), pv=previsaoISO(r), late=atrasado(r);
+  var s1=['ok','Entregue',fmtDM((r.data_entrega||'').slice(0,10))||'—'];
+  var transp=esc(r.transportadora||'—');
+  var s2,s3,s4;
+  if(st==='AGUARDANDO SAÍDA'){ s2=['now','Sai',fmtDM(sd)||'—']; s3=['','Em trânsito','—']; s4=['','Previsão',fmtDM(pv)||'—']; }
+  else if(st==='NÃO LIBERADO'){ s2=['lt','Não liberado','—']; s3=['','Em trânsito','—']; s4=['','Previsão',fmtDM(pv)||'—']; }
+  else if(st==='ENTREGUE'){ s2=['ok','Saiu',fmtDM(sd)||'—']; s3=['ok','Em trânsito',transp]; s4=['ok','Recebido',r.bipado_em?new Date(r.bipado_em).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'—']; }
+  else { s2=['ok','Saiu',fmtDM(sd)||'—']; if(late||st==='ATRASADO'){ s3=['ok','Em trânsito',transp]; s4=['lt','Previsão',fmtDM(pv)||'—']; } else { s3=['now','Em trânsito',transp]; s4=['','Previsão',fmtDM(pv)||'—']; } }
+  return [s1,s2,s3,s4].map(function(p){return '<div class="s '+p[0]+'"><i></i><b>'+p[1]+'</b>'+p[2]+'</div>';}).join('');
+}
+function cardRota(r){
+  var sc=SETOR_CLS[r.setor]||['lab',String(r.setor||'?').slice(0,2).toUpperCase()], nome=primeiroNome(r), reg=(r.data_entrega||'').slice(0,10);
+  return '<div class="rc '+sc[0]+'"><div class="rt"><div class="ph">'+sc[1]+'</div><div><h3>'+esc(r.destino)+tagsDestino(r)+'</h3>'+
+    '<div class="sub"><b>'+esc(r.setor)+'</b>'+(nome?' · '+esc(nome):'')+' · entregue à expedição '+fmtDM(reg)+'</div></div><span class="sp"></span>'+situacaoHTML(r)+'</div>'+
+    '<div class="stp">'+passosRota(r)+'</div>'+
+    '<div class="rb">'+listaItens(r.descricao_item)+(r.observacao?'<div class="obs">Obs: '+esc(r.observacao)+'</div>':'')+recebidoHTML(r)+'</div>'+
+    rodapeCard(r,'rf')+'</div>';
+}
+
+function toggleGrupoData(tr){
+  var tb=tr.parentNode, k=tb.getAttribute('data-k');
+  var fecha=!tb.classList.contains('fechado');
+  tb.classList.toggle('fechado',fecha);
+  gruposFechados[k]=fecha;
+  var a=tr.querySelector('.ar-g'); if(a) a.textContent=fecha?'▸':'▾';
+}
+
+function renderResumo(){
+  var el=document.getElementById('kpis'); if(!el) return;
+  var hoje=hojeISO();
+  var atr=todoEnvios.filter(function(r){return r.status_envio==='ATRASADO';});
+  var maior=null; atr.forEach(function(r){var d=diasAtraso(r); if(!maior||d>maior.d) maior={d:d,r:r};});
+  var saem=todoEnvios.filter(function(r){return r.status_envio==='AGUARDANDO SAÍDA'&&saidaISO(r)===hoje;});
+  var semRast=saem.filter(function(r){return !r.rastreio;}).length;
+  var tr=todoEnvios.filter(function(r){return r.status_envio==='EM TRÂNSITO';});
+  var cheg=tr.filter(function(r){return previsaoISO(r)===hoje;});
+  var nomes=cheg.slice(0,2).map(function(r){return esc(r.destino);}).join(', ')+(cheg.length>2?' +'+(cheg.length-2):'');
+  var bat=tr.filter(function(r){return r.tem_bateria;}).length;
+  el.innerHTML=
+    '<div class="kpi'+(atr.length?' bad':'')+'" onclick="irParaAba(\'atrasado\')"><small>Atrasados</small><strong>'+atr.length+'</strong><em>'+(maior&&maior.d>0?'maior atraso: '+pluralDias(maior.d)+' ('+esc(maior.r.destino)+')':'nenhum atraso')+'</em></div>'+
+    '<div class="kpi'+(semRast?' warn':'')+'" onclick="irParaAba(\'aguardando\')"><small>Saem hoje</small><strong>'+saem.length+'</strong><em>'+(saem.length?semRast+' ainda sem rastreio':'nenhuma saída hoje')+'</em></div>'+
+    '<div class="kpi" onclick="irParaAba(\'transito\')"><small>Chegam hoje</small><strong>'+cheg.length+'</strong><em>'+(cheg.length?nomes:'nenhuma previsão para hoje')+'</em></div>'+
+    '<div class="kpi" onclick="irParaAba(\'transito\')"><small>Em trânsito</small><strong>'+tr.length+'</strong><em>'+bat+(bat===1?' com bateria':' com bateria')+'</em></div>';
+}
+
+function renderFiltros(aba){
+  var base=filtrar(aba,true), cont={};
+  base.forEach(function(r){cont[r.setor]=(cont[r.setor]||0)+1;});
+  var ch='<button class="chip'+(fSetor===''?' on':'')+'" onclick="setSetor(\'\')">Todos '+base.length+'</button>';
+  SETORES.forEach(function(st){ if(cont[st]||fSetor===st) ch+='<button class="chip'+(fSetor===st?' on':'')+'" onclick="setSetor(\''+st+'\')">'+(st.length<=3?st:st.charAt(0)+st.slice(1).toLowerCase())+' '+(cont[st]||0)+'</button>'; });
+  var ce=document.getElementById('chips-setor'); if(ce) ce.innerHTML=ch;
+  var sel=document.getElementById('g-transp');
+  if(sel){
+    var lista=TRANSPS.slice(); todoEnvios.forEach(function(r){if(r.transportadora&&lista.indexOf(r.transportadora)<0) lista.push(r.transportadora);});
+    sel.innerHTML='<option value="">Todas as transportadoras</option>'+lista.map(function(t){return '<option value="'+esc(t)+'"'+(fTransp===t?' selected':'')+'>'+esc(t)+'</option>';}).join('');
+  }
+  var cb=document.getElementById('chip-bat'); if(cb) cb.classList.toggle('on',fBat);
+  document.querySelectorAll('#vt button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-v')===fVista);});
+  var dr=document.getElementById('datas-rec'); if(dr) dr.style.display=aba==='recebidos'?'inline':'none';
+}
+function setSetor(v){fSetor=(fSetor===v)?'':v;renderAba(abaAtual);}
+function setTransp(v){fTransp=v;renderAba(abaAtual);}
+function toggleBat(){fBat=!fBat;renderAba(abaAtual);}
+function irParaAba(aba){irPara(aba,document.getElementById('tab-'+aba));}
+
+function copiarTexto(txt,msg){
+  function ok(){showToast(msg,'success');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(ok,function(){fallbackCopia(txt,ok);});}
+  else fallbackCopia(txt,ok);
+}
+function fallbackCopia(txt,cb){
+  var t=document.createElement('textarea'); t.value=txt; t.style.position='fixed'; t.style.opacity='0';
+  document.body.appendChild(t); t.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(t); cb();
+}
+function copiarRast(el){copiarTexto(el.getAttribute('data-c'),'Rastreio copiado');}
+function cobrar(id){
+  var r=todoEnvios.find(function(x){return String(x.id)===String(id);}); if(!r) return;
+  var pv=previsaoISO(r), d=diasAtraso(r);
+  var msg='Olá! Poderiam informar a situação do envio abaixo?\n\n'+
+    'Destino: '+r.destino+'\n'+
+    (r.descricao_item?'Item: '+String(r.descricao_item).replace(/\s*\n\s*/g,' ').trim()+'\n':'')+
+    (r.rastreio?'Rastreio: '+r.rastreio+'\n':'')+
+    (saidaISO(r)?'Saída: '+fmtDMA(saidaISO(r))+'\n':'')+
+    (pv?'Previsão de entrega: '+fmtDMA(pv)+(d>0?' ('+pluralDias(d)+' de atraso)':'')+'\n':'')+
+    '\nObrigado.';
+  copiarTexto(msg,'Mensagem de cobrança copiada');
+}
+
+// ---- painel lateral de edicao (mantem os mesmos ids que salvarLinha usa) ----
+function evTL(cls,tit,sub,quando){return '<div class="ev '+cls+'"><i class="dot"></i><div><b>'+tit+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</div><time>'+(quando||'')+'</time></div>';}
+function timelineHTML(r){
+  var st=r.status_envio, sd=saidaISO(r), pv=previsaoISO(r), late=atrasado(r);
+  var ev=[];
+  ev.push(evTL('',"Entregue à expedição",esc(r.entregue||r.registrado_por||''),fmtDM((r.data_entrega||'').slice(0,10))));
+  if(st==='NÃO LIBERADO'){
+    ev.push(evTL('late','Não liberado',esc(r.observacao||'aguardando liberação'),''));
+    return ev.join('');
+  }
+  var saiu=(st!=='AGUARDANDO SAÍDA');
+  ev.push(evTL(saiu?'':'now','Saída prevista',sd?'prazo de '+(parseInt(r.prazo)||0)+' dias':'sem data',fmtDM(sd)));
+  ev.push(evTL(saiu?'':'pend','Em trânsito',saiu?esc((r.transportadora||'')+(r.rastreio?' · '+r.rastreio:'')):'aguardando rastreio',saiu&&r.saida_confirmada_em?fmtDH(r.saida_confirmada_em):''));
+  if(st==='ENTREGUE'){
+    ev.push(evTL('','Previsão de chegada','',fmtDM(pv)));
+    ev.push(evTL('','Recebido na loja',esc(r.nome_quem_recebeu_loja||''),fmtDH(r.bipado_em)));
+  }else{
+    var a=diasAtraso(r);
+    ev.push(evTL(!saiu?'pend':(late?'late':'now'),late?'Previsão estourada há '+pluralDias(a):'Previsão de chegada',pv?'saída + prazo':'sem previsão',fmtDM(pv)));
+    ev.push(evTL('pend','Recebido na loja','aguardando bipagem do QR','—'));
+  }
+  return ev.join('');
+}
+function abrirDrawer(id){
+  var r=todoEnvios.find(function(x){return String(x.id)===String(id);}); if(!r) return;
+  var i=esc(r.id), st=r.status_envio, ent=(st==='ENTREGUE');
+  var opts=ent?'<option value="ENTREGUE" selected>ENTREGUE</option>':['AGUARDANDO SAÍDA','EM TRÂNSITO','ATRASADO','NÃO LIBERADO'].map(function(o){return '<option value="'+o+'"'+(st===o?' selected':'')+'>'+o+'</option>';}).join('');
+  var tr=TRANSPS.slice(); if(r.transportadora&&tr.indexOf(r.transportadora)<0) tr.push(r.transportadora);
+  var optT='<option value=""'+(!r.transportadora?' selected':'')+'>Selecione...</option>'+tr.map(function(t){return '<option'+(r.transportadora===t?' selected':'')+'>'+esc(t)+'</option>';}).join('');
+  var nome=r.registrado_por||'';
+  document.getElementById('drawer').innerHTML=
+    '<div class="dh"><div style="flex:1;min-width:0;"><h2>'+esc(r.destino)+'</h2><p>'+esc(r.descricao_item||'—')+'<br>'+esc(r.setor)+(nome?' · registrado por '+esc(nome):'')+(r.nome_recebedor?' · recebedor '+esc(r.nome_recebedor):'')+'</p></div>'+statusBadge(st)+'<button class="ib" onclick="fecharDrawer()" title="Fechar (Esc)">&#10005;</button></div>'+
+    '<div class="tl">'+timelineHTML(r)+'</div>'+
+    '<div class="aviso'+(r.notificado_em?'':' no')+'">'+(r.notificado_em?'<b>&#10003; Aviso de saída enviado</b> em '+esc(fmtDH(r.notificado_em)):'<b>Aviso de saída ainda não enviado</b>')+'</div>'+
+    '<div class="edit-grid">'+
+      '<div class="field"><label>Status</label><select id="s-status-'+i+'"'+(ent?' disabled':'')+'>'+opts+'</select></div>'+
+      '<div class="field"><label>Transportadora</label><select id="s-transp-'+i+'">'+optT+'</select></div>'+
+      '<div class="field full"><label>Rastreio</label><input type="text" id="s-rastreio-'+i+'" value="'+esc(r.rastreio||'')+'"></div>'+
+      '<div class="field full"><label>Observação</label><textarea id="s-obs-'+i+'" rows="3" placeholder="Ex.: transportadora avisou nova previsão">'+esc(r.observacao||'')+'</textarea></div>'+
+    '</div>'+
+    '<div class="foot"><button class="btn-save" onclick="salvarLinhaDrawer(\''+i+'\')">Salvar</button>'+
+      '<button class="bt" style="padding:9px 14px;margin:0" onclick="reenviarNotificacao(\''+i+'\')">Reenviar mensagem</button>'+
+      (r.codigo_bipagem?'<button class="bt" style="padding:9px 14px;margin:0" onclick="verQR(\''+i+'\')">Ver QR</button>':'')+'</div>';
+  document.getElementById('drawer-ov').classList.add('on');
+  document.getElementById('drawer').classList.add('on');
+}
+function fecharDrawer(){
+  var d=document.getElementById('drawer'), o=document.getElementById('drawer-ov');
+  if(d) d.classList.remove('on'); if(o) o.classList.remove('on');
+}
+async function salvarLinhaDrawer(id){ await salvarLinha(id); fecharDrawer(); }
+function toggleMenu(e){e.stopPropagation();document.getElementById('menu-pop').classList.toggle('on');}
+function fecharMenu(){var m=document.getElementById('menu-pop'); if(m) m.classList.remove('on');}
+document.addEventListener('click',fecharMenu);
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){fecharDrawer(); if(document.getElementById('qr-modal').style.display==='flex') fecharQR();}
+  if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test((document.activeElement||{}).tagName||'')){e.preventDefault();document.getElementById('g-busca').focus();}
+});
+
+
+var GRUPOS_WPP={
+  'RH':'120363420522914875@g.us',
+  'FINANCEIRO':'120363420522914875@g.us',
+  'LABORATÓRIO':'120363428164608447@g.us',
+  'GARANTIA':'120363427096008214@g.us',
+  'CALL CENTER':'120363419236279604@g.us',
+  'MANUTENÇÃO':'120363023855836704@g.us'
+};
+var NUMEROS_WPP={
+  'ALINE OHANA BRASIL DE SOUZA':'5571993573851',
+  'JAMILE ALMEIDA BISPO':'5571993472616',
+  'MILENA GUIMARÃES DOS SANTOS':'5571997355074',
+  'NILMA MOREIRA RIBAMAR':'5571992933423',
+  'KEICE CATHARINE GOMES SAAD':'5571993578424',
+  'PATRÍCIA SILVA DE AGUIAR':'5571981520582',
+  'QUÉRCIA MONIQUE DA SILVA MACIEL':'5571992468202',
+  'LAIANA SANTANA DE SOUSA DA SILVA':'5571999259198'
+};
+var LINKS_SETOR={
+  'RH':'https://admvxcase2026-creator.github.io/protocoloestoque/setor.html?setor=RH',
+  'FINANCEIRO':'https://admvxcase2026-creator.github.io/protocoloestoque/setor.html?setor=RH',
+  'LABORATÓRIO':'https://admvxcase2026-creator.github.io/protocoloestoque/setor.html?setor=LABORATÓRIO',
+  'GARANTIA':'https://admvxcase2026-creator.github.io/protocoloestoque/setor.html?setor=GARANTIA',
+  'CALL CENTER':'https://admvxcase2026-creator.github.io/protocoloestoque/setor.html?setor=CALL%20CENTER',
+  'MANUTENÇÃO':'https://admvxcase2026-creator.github.io/protocoloestoque/setor.html?setor=MANUTEN%C3%87%C3%83O'
+};
+
+var pdvNumerosAcomp={};
+
+async function carregarNumerosPDVAcomp(){
+  try{
+    var res=await fetch(SB_URL+'/rest/v1/protocolo_pdv_contatos?order=destino.asc&limit=200',{headers:H});
+    var rows=await res.json();
+    pdvNumerosAcomp={};
+    rows.forEach(function(r){pdvNumerosAcomp[r.destino]={numero:r.whatsapp,id:r.id};});
+  }catch(e){}
+}
+
+// Fila serializada de WhatsApp: manda um de cada vez, com intervalo e retentativa.
+// Evita que disparos em rajada (ex.: várias lojas do mesmo gestor) sejam derrubados pela API.
+var _filaWpp=[], _filaAtiva=false;
+function esperar(ms){return new Promise(function(r){setTimeout(r,ms);});}
+function enfileirarWpp(number,text,destino){
+  if(!number||!text) return;
+  _filaWpp.push({number:number,text:text,destino:destino||''});
+  processarFilaWpp();
+}
+async function processarFilaWpp(){
+  if(_filaAtiva) return;
+  _filaAtiva=true;
+  while(_filaWpp.length){
+    var job=_filaWpp.shift();
+    var ok=false;
+    for(var t=0;t<3 && !ok;t++){
+      try{
+        var res=await fetch('https://evolution.vxcase.com.br/message/sendText/FARDAMENTOS',{
+          method:'POST',
+          headers:{'Content-Type':'application/json','apikey':'B168AAC08A5E-467D-A691-54F427D6D4E8'},
+          body:JSON.stringify({number:job.number,text:job.text})
+        });
+        ok=res.ok;
+        if(!ok) await esperar(1500);
+      }catch(e){ await esperar(1500); }
+    }
+    if(!ok){
+      console.error('WhatsApp falhou após 3 tentativas:',job.number);
+      registrarAlertaWpp(job.destino,'Falha ao enviar mensagem no WhatsApp após 3 tentativas.');
+    }
+    await esperar(900); // intervalo entre envios p/ não estourar o limite da API
+  }
+  _filaAtiva=false;
+}
+
+// ===== Card de atenção: envio que não conseguiu notificar o WhatsApp =====
+let ALERTAS_WPP=[];
+async function registrarAlertaWpp(destino,motivo){
+  try{
+    var {data:existente}=await sb.from('protocolo_alertas_wpp')
+      .select('id').eq('destino',destino).eq('motivo',motivo).eq('resolvido',false).limit(1);
+    if(existente && existente.length){ await carregarAlertasWpp(); return; }
+    await sb.from('protocolo_alertas_wpp').insert({destino:destino,motivo:motivo});
+  }catch(e){ console.warn('registrarAlertaWpp',e); }
+  await carregarAlertasWpp();
+}
+async function carregarAlertasWpp(){
+  try{
+    var {data}=await sb.from('protocolo_alertas_wpp').select('*').eq('resolvido',false).order('criado_em',{ascending:false});
+    ALERTAS_WPP=data||[];
+  }catch(e){ ALERTAS_WPP=[]; }
+  renderAlertasWpp();
+}
+async function resolverAlertaWpp(id){
+  try{ await sb.from('protocolo_alertas_wpp').update({resolvido:true,resolvido_em:new Date().toISOString()}).eq('id',id); }catch(e){}
+  ALERTAS_WPP=ALERTAS_WPP.filter(function(a){return a.id!==id;});
+  renderAlertasWpp();
+}
+function renderAlertasWpp(){
+  var el=document.getElementById('alertasWpp'); if(!el) return;
+  if(!ALERTAS_WPP.length){ el.innerHTML=''; el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML='<div class="alerta-wpp-banner">'
+    +'<div class="alerta-wpp-head">⚠️ '+ALERTAS_WPP.length+' notificação(ões) de WhatsApp não enviada(s)</div>'
+    +'<div class="alerta-wpp-lista">'
+    +ALERTAS_WPP.map(function(a){
+      return '<div class="alerta-wpp-item">'
+        +'<span>'+(a.destino?'<b>'+a.destino+'</b> — ':'')+a.motivo+' <span class="alerta-wpp-quando">'+new Date(a.criado_em).toLocaleString('pt-BR')+'</span></span>'
+        +'<button class="alerta-wpp-ok" onclick="resolverAlertaWpp('+a.id+')">✔ Resolvido</button>'
+        +'</div>';
+    }).join('')
+    +'</div></div>';
+}
+
+async function enviarWPPAcomp(r){
+  try{ if(window._pdvNumerosProntos) await window._pdvNumerosProntos; }catch(e){}   // contatos dos PDVs carregados antes de montar o aviso da loja
+  var grupo=GRUPOS_WPP[r.setor];
+  if(!grupo){ registrarAlertaWpp(r.destino,'Setor "'+(r.setor||'—')+'" sem grupo de WhatsApp cadastrado.'); return; }
+  var nome=r.registrado_por||r.entregue||'';
+  var primeiroNome=nome?nome.split(' ')[0]:'';
+  var numero=NUMEROS_WPP[nome]||'';
+  var link=LINKS_SETOR[r.setor]||'';
+  var contato=pdvNumerosAcomp[r.destino];
+  var msg='📦 *Protocolo de Saída — VX Case*\n\n'
+    +'Olá, *'+primeiroNome+'*! Atualização em seu envio.\n\n'
+    +'🏪 *'+r.destino+'*\n\n'
+    +'📝 '+r.descricao_item+'\n\n'
+    +'🚦 Status: *'+r.status_envio+'*\n\n'
+    +(r.transportadora?'🚚 Transportadora: '+r.transportadora+'\n\n':'')
+    +(r.rastreio?'🔍 Rastreio: '+r.rastreio+'\n\n':'')
+    +(r.observacao?'📋 Observação: '+r.observacao+'\n\n':'')
+    +(link?'Acesse: '+link+'\n\n':'')
+    +(numero?'@'+numero:'');
+  try{
+    enfileirarWpp(grupo,msg,r.destino);
+    if(contato&&contato.numero){
+      // Calcula previsão de chegada (data_saida_calculada + prazo)
+      var previsao='';
+      if(r.data_saida_calculada&&r.prazo){
+        var partes=r.data_saida_calculada.split('-');
+        var dChegada=new Date(parseInt(partes[0]),parseInt(partes[1])-1,parseInt(partes[2]));
+        dChegada.setDate(dChegada.getDate()+parseInt(r.prazo));
+        previsao=dChegada.getDate().toString().padStart(2,'0')+'/'+(dChegada.getMonth()+1).toString().padStart(2,'0')+'/'+dChegada.getFullYear();
+      }
+      var qrUrl=r.codigo_bipagem?'https://admvxcase2026-creator.github.io/protocoloestoque/bipar.html?c='+r.codigo_bipagem:'';
+      var msgPDV='📦 *VX Case — Aviso de Envio*\n\n'
+        +'Olá! Item a caminho do seu PDV.\n\n'
+        +'🏪 *'+r.destino+'*\n'
+        +'📝 '+r.descricao_item+'\n'
+        +(r.transportadora?'🚚 Transportadora: *'+r.transportadora+'*\n':'')
+        +(r.rastreio?'🔍 Rastreio: '+r.rastreio+'\n':'')
+        +(previsao?'📅 Previsão de chegada: *'+previsao+'*\n':'')
+        +'\n⚠️ *Ao receber, escaneie o QR Code ANTES de abrir a embalagem.*'
+        +(qrUrl?'\n\n'+qrUrl:'');
+      enfileirarWpp(contato.numero+'@s.whatsapp.net',msgPDV);
+    }
+  }catch(e){}
+}
+
+// Puxa rastreio+transportadora do sistema ENVIOS ESTOQUE para os itens em AGUARDANDO SAÍDA.
+// Regra sub/principal: o rastreio fica na linha eh_principal=true do mesmo `grupo` no Envios.
+// Casa por destino+data (data_saida_calculada = data do envio). Ao achar rastreio:
+// grava EM TRÂNSITO + rastreio + transportadora e dispara a mensagem (mesma rotina do salvar).
+var _sincronizando=false;
+async function sincronizarRastreios(){
+  if(_sincronizando) return;
+  var d7=new Date(); d7.setDate(d7.getDate()-7);
+  var limiteStr=d7.getFullYear()+'-'+String(d7.getMonth()+1).padStart(2,'0')+'-'+String(d7.getDate()).padStart(2,'0');
+  // Pendentes: aguardando saída, ainda sem rastreio, com saída prevista nos últimos 7 dias em diante,
+  // E NUNCA notificados antes. Essa última condição é uma regra travada, não uma checagem a mais:
+  // uma vez que notificado_em está preenchido, esse envio está PERMANENTEMENTE fora da lista de
+  // candidatos a notificar — não importa o que aconteça depois com status_envio ou rastreio.
+  // Pendentes: aguardando saída, ainda sem rastreio, com saída prevista nos últimos 7 dias em diante.
+  // notificado_em NÃO entra aqui — quem já foi notificado continua podendo receber status/rastreio
+  // normalmente (um rastreio novo de verdade precisa atualizar a tela). O que notificado_em trava é
+  // só o passo de MANDAR MENSAGEM de novo, mais abaixo — nunca a atualização do dado em si.
+  var pend=todoEnvios.filter(function(r){return r.status_envio==='AGUARDANDO SAÍDA' && !r.rastreio && r.destino && r.data_saida_calculada && r.data_saida_calculada>=limiteStr && r.deleted_at==null;});
+  window._syncDebug={etapa:'inicio', pendentes:pend.length, destinos:pend.map(function(r){return r.destino;})};
+  if(!pend.length){ window._syncDebug.etapa='sem_pendentes'; return; }
+  _sincronizando=true;
+  try{
+    function norm(x){return (x||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase().replace(/\bBARRA\b/g,'').replace(/\s+/g,' ').trim();}
+    // Busca no ENVIOS por DATA de saída dos pendentes (não por destino): assim vêm TODAS as
+    // linhas daquelas datas — inclusive as PRINCIPAIS (nome diferente do sub), necessárias
+    // para o sub herdar o rastreio da principal do mesmo grupo.
+    var datasUnicas=[]; pend.forEach(function(r){ if(datasUnicas.indexOf(r.data_saida_calculada)<0) datasUnicas.push(r.data_saida_calculada); });
+    var inClause=datasUnicas.map(function(d){return '"'+String(d).replace(/"/g,'')+'"';}).join(',');
+    var url=SB_URL+'/rest/v1/env_envios?select=*&data=in.('+encodeURIComponent(inClause).replace(/%2C/g,',')+')&order=data.desc&limit=2000';
+    var res=await fetch(url,{headers:H});
+    window._syncDebug.httpStatus=res.status;
+    var texto=await res.text();
+    if(!res.ok){ window._syncDebug.etapa='erro_http'; window._syncDebug.corpo=texto; console.error('sincronizarRastreios HTTP',res.status,texto); _sincronizando=false; return; }
+    var envs; try{ envs=JSON.parse(texto); }catch(e){ envs=[]; }
+    if(!Array.isArray(envs)) envs=[];
+    window._syncDebug.linhasEnvios=envs.length;
+
+    // Regras:
+    // (1) casar pela DATA de saída: env_envios.data == protocolo_envios.data_saida_calculada.
+    // (2) casar pelo TIPO: bateria só casa com bateria. No ENVIOS o tipo é o campo `envio`
+    //     ('Bateria' vs os demais); no ACOMPANHAR é o booleano `tem_bateria`.
+    //     Assim, no mesmo ponto/data com envio semanal E bateria, cada um pega seu rastreio.
+    // (3) subdestino sem rastreio próprio herda o rastreio da PRINCIPAL do mesmo grupo, mesma data E mesmo tipo.
+    // Os itens do Protocolo são SEMANAIS (ou Bateria). Só casam com envios do ENVIOS do tipo Semanal ('N')
+    // ou Bateria ('B'). Envios Extra, Quotes (e qualquer outro tipo) NÃO entram: o rastreio deles nunca
+    // pode ser puxado para itens semanais nem de bateria. Retorna null para os tipos ignorados.
+    function tipoBatDeEnvio(e){
+      var t=String(e.envio||'').trim().toUpperCase();
+      if(t==='BATERIA') return 'B';
+      if(t==='SEMANAL') return 'N';
+      return null;
+    }
+    // Transportadoras terrestres que aceitam bateria junto com o resto do envio — pra elas,
+    // não exige a separação por tipo: a linha vale tanto pra item com bateria quanto sem.
+    var TRANSP_SEM_RESTRICAO_BATERIA=['BRASPRESS','JAMEF','CORREIOS','ML LOG'];
+    function transpLiberaBateria(transp){ return TRANSP_SEM_RESTRICAO_BATERIA.indexOf(String(transp||'').toUpperCase())>=0; }
+    var rastPorDestData={};   // (destNorm|data|tipo) -> {rastreio,transp}
+    var transpDestData={};    // (destNorm|data|tipo) -> transportadora
+    var rastPrincGrupoData={};// (grupo|data|tipo)    -> {rastreio,transp}
+    var grupoDestData={};     // (destNorm|data|tipo) -> grupo
+    var grupoPorDest={};      // (destNorm|data)      -> grupo, INDEPENDENTE do tipo — sem isso,
+                               // um sub cadastrado só como "Semanal" nunca descobria seu grupo
+                               // na hora de herdar rastreio de BATERIA da principal.
+    envs.forEach(function(e){
+      var k=norm(e.dest), dt=e.data||'';
+      if(tipoBatDeEnvio(e)===null) return;   // Extra / Quotes / outros: ignorados por completo
+      if(e.grupo!=null) grupoPorDest[k+'|'+dt]=e.grupo;
+      // cada envio indexa SÓ no seu tipo real — um rastreio de Bateria nunca deve satisfazer
+      // um item sem bateria, mesmo que a transportadora aceite os dois tipos. Uma transportadora
+      // "sem restrição" pode estar levando SÓ o item de bateria, num envio à parte; os demais
+      // itens desse mesmo destino/dia continuam esperando o rastreio deles, separado.
+      var tipos=[tipoBatDeEnvio(e)];
+      tipos.forEach(function(tp){
+        var chaveDD=k+'|'+dt+'|'+tp;
+        if(e.transp && !transpDestData[chaveDD]) transpDestData[chaveDD]=e.transp;
+        if(e.grupo!=null) grupoDestData[chaveDD]=e.grupo;
+        if(!e.rastreio) return;
+        if(!rastPorDestData[chaveDD]) rastPorDestData[chaveDD]={rastreio:e.rastreio,transp:e.transp||''};
+        if(e.grupo!=null){
+          var chaveGD=e.grupo+'|'+dt+'|'+tp;
+          if(e.eh_principal || !rastPrincGrupoData[chaveGD]) rastPrincGrupoData[chaveGD]={rastreio:e.rastreio,transp:e.transp||''};
+        }
+      });
+    });
+
+    var mudou=false, casados=0, aNotificar=[];
+    // Pontos onde bateria e não-bateria saem JUNTOS, no mesmo rastreio (mesma transportadora
+    // cobre os dois tipos). Em qualquer outro destino, bateria e não-bateria são SEMPRE
+    // envios separados, com rastreios diferentes — nunca compartilham.
+    var DESTINOS_BRASPRESS_LIBERADO=['SAO PAULO TAMBORE','CAMPINAS','ARACAJU','RIO DE JANEIRO','CONQUISTA'];
+    var DESTINOS_MLLOG_LIBERADO=['FEIRA DE SANTANA'];
+    for(var i=0;i<pend.length;i++){
+      var it=pend[i];
+      var k=norm(it.destino);
+      var dt=it.data_saida_calculada;          // dia que SAI
+      var tp=it.tem_bateria?'B':'N';           // tipo do item no acompanhar
+      var chaveDD=k+'|'+dt+'|'+tp;
+      var p=rastPorDestData[chaveDD];          // rastreio do próprio destino, mesma data E mesmo tipo
+      if(!p||!p.rastreio){                      // sub sem rastreio próprio → herda da principal do grupo, mesma data e tipo
+        var g=grupoPorDest[k+'|'+dt];
+        if(g!=null) p=rastPrincGrupoData[g+'|'+dt+'|'+tp];
+      }
+      var destinoEspecial=DESTINOS_BRASPRESS_LIBERADO.some(function(nome){return k.indexOf(nome)>=0;})
+                        || DESTINOS_MLLOG_LIBERADO.some(function(nome){return k.indexOf(nome)>=0;});
+      // Só nesses 6 destinos especiais, bateria e não-bateria saem JUNTOS, no mesmo rastreio —
+      // então um item de bateria aí pode não ter linha própria tipo "Bateria" cadastrada, e
+      // precisa cair pro rastreio comum (N) desse mesmo destino/grupo. Em qualquer outro
+      // destino, bateria NUNCA cai pro rastreio comum — sempre espera o envio separado dela.
+      if((!p||!p.rastreio) && tp==='B' && destinoEspecial){
+        var chaveDDN=k+'|'+dt+'|N';
+        p=rastPorDestData[chaveDDN];
+        if(!p||!p.rastreio){
+          var gN=grupoPorDest[k+'|'+dt];
+          if(gN!=null) p=rastPrincGrupoData[gN+'|'+dt+'|N'];
+        }
+      }
+      if(!p||!p.rastreio) continue;             // sem rastreio para este dia/tipo → não puxa
+      var transpAchada=(p.transp||transpDestData[chaveDD]||'').toUpperCase();
+      // REGRA TRAVADA: item SEM bateria só pode casar com Braspress ou ML LOG se o destino
+      // estiver nessa lista fixa (pontos onde bateria e não-bateria saem juntos, mesmo
+      // rastreio) — fora disso, item sem bateria só casa com Gollog.
+      if(tp==='N' && (transpAchada==='BRASPRESS'||transpAchada==='ML LOG')){
+        var listaLiberada=transpAchada==='BRASPRESS'?DESTINOS_BRASPRESS_LIBERADO:DESTINOS_MLLOG_LIBERADO;
+        var destinoLiberado=listaLiberada.some(function(nome){return k.indexOf(nome)>=0;});
+        if(!destinoLiberado) continue;   // rejeita — não é um desses destinos, espera o rastreio certo da Gollog
+      }
+      casados++;
+      var transpFinal=p.transp || transpDestData[chaveDD] || '';
+      try{
+        var jaNotificadoAntes=!!it.notificado_em;   // marca PERMANENTE — nunca é apagada por correção de status
+        // 1) RESERVA do aviso (só se nunca foi avisado). É atômica: a condição notificado_em=is.null é checada
+        //    no banco, então só UMA tela/aba/computador consegue reservar — antes, duas telas abertas ao mesmo
+        //    tempo viam o mesmo envio como novidade e mandavam a mensagem em dobro. A reserva vem ANTES de mexer
+        //    no status: se a rede falhar aqui, o envio continua pendente e tenta de novo no próximo ciclo.
+        var ganhouAviso=false;
+        if(!jaNotificadoAntes){
+          var rc=await fetch(SB_URL+'/rest/v1/protocolo_envios?id=eq.'+it.id+'&notificado_em=is.null',{
+            method:'PATCH',headers:Object.assign({},H,{'Prefer':'return=representation'}),
+            body:JSON.stringify({notificado_em:new Date().toISOString()})
+          });
+          if(!rc.ok){ window._syncDebug.erroReserva=rc.status; console.error('sinc reserva do aviso HTTP',rc.status); continue; }
+          var reservadas=await rc.json();
+          if(Array.isArray(reservadas) && reservadas.length){ ganhouAviso=true; it.notificado_em=reservadas[0].notificado_em; }
+          else it.notificado_em=new Date().toISOString();   // outra tela já reservou e vai avisar
+        }
+        // 2) Grava o EM TRÂNSITO + rastreio SEMPRE (mantém o acompanhar em dia).
+        it.status_envio='EM TRÂNSITO';it.transportadora=transpFinal;it.rastreio=p.rastreio;it.editado_em=new Date().toISOString();
+        if(ganhouAviso) aNotificar.push(it);   // entra na lista de envio mesmo que o PATCH abaixo falhe: o aviso não pode se perder
+        var rs=await fetch(SB_URL+'/rest/v1/protocolo_envios?id=eq.'+it.id,{
+          method:'PATCH',headers:H,
+          body:JSON.stringify({status_envio:'EM TRÂNSITO',transportadora:transpFinal,rastreio:p.rastreio,editado_em:it.editado_em})
+        });
+        if(!rs.ok) console.error('sinc status HTTP',rs.status);   // o próximo ciclo refaz — sem avisar de novo, a reserva já está gravada
+        mudou=true;
+      }catch(err){console.error('sinc item',err);}
+    }
+    // DISPARO DE WHATSAPP — dispara sempre, inclusive logo que a página abre. Só entra aqui o que acabou de
+    // ganhar rastreio e nunca foi avisado (a reserva acima garante isso), então é novidade de verdade. Antes,
+    // um "modo silencioso" de 8s na abertura engolia esses avisos: o status virava EM TRÂNSITO e a marca de
+    // "já avisado" era gravada, mas a mensagem não saía — e como a marca é permanente, nunca mais saía.
+    // (A fila do WhatsApp já manda um de cada vez, com intervalo e nova tentativa.)
+    if(aNotificar.length){
+      for(var n=0;n<aNotificar.length;n++){ await enviarWPPAcomp(aNotificar[n]); }
+    }
+    window._syncDebug.etapa='fim'; window._syncDebug.casados=casados; window._syncDebug.disparados=aNotificar.length;
+    if(mudou){atualizarBadges();renderAba(abaAtual);}
+  }catch(e){window._syncDebug.etapa='excecao'; window._syncDebug.erro=String(e); console.error('sincronizarRastreios',e);}
+  _sincronizando=false;
+}
+
+async function salvarLinha(id){
+  var status=document.getElementById('s-status-'+id).value;
+  var transp=document.getElementById('s-transp-'+id).value;
+  var rastreio=document.getElementById('s-rastreio-'+id).value;
+  var obs=document.getElementById('s-obs-'+id).value;
+  var item=todoEnvios.find(function(r){return r.id===id;});
+  var rastreioAntes=item?(item.rastreio||''):'';
+  var ganhouRastreio=(!rastreioAntes) && !!(rastreio&&rastreio.trim());  // vazio → preenchido agora
+  try{
+    await fetch(SB_URL+'/rest/v1/protocolo_envios?id=eq.'+id,{
+      method:'PATCH',headers:H,
+      body:JSON.stringify({status_envio:status,transportadora:transp,rastreio:rastreio,observacao:obs,editado_em:new Date().toISOString()})
+    });
+    if(item){item.status_envio=status;item.transportadora=transp;item.rastreio=rastreio;item.observacao=obs;item.editado_em=new Date().toISOString();}
+    // Só dispara no WhatsApp se o rastreio foi ADICIONADO agora (não em edição de status/obs).
+    if(item && ganhouRastreio) enviarWPPAcomp(item);
+    showToast('Salvo!','success');
+    atualizarBadges();
+    renderAba(abaAtual);
+  }catch(e){showToast('Erro ao salvar.','error');}
+}
+
+function showToast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.display='block';
+  t.style.borderColor=type==='success'?'var(--success)':'var(--danger)';
+  t.style.color=type==='success'?'var(--success)':'var(--danger)';
+  setTimeout(function(){t.style.display='none';},2500);
+}
+
+var qrAtualItem=null;
+var BASE_URL='https://admvxcase2026-creator.github.io/protocoloestoque';
+
+function verQR(id){
+  var r=todoEnvios.find(function(x){return x.id===id;});
+  if(!r||!r.codigo_bipagem) return;
+  qrAtualItem=r;
+  document.getElementById('qr-modal-destino').textContent=r.destino;
+  document.getElementById('qr-modal-desc').textContent=r.descricao_item;
+  var container=document.getElementById('qr-modal-container');
+  container.innerHTML='';
+  var url=BASE_URL+'/bipar.html?c='+r.codigo_bipagem;
+  function renderQR(){
+    new QRCode(container,{text:url,width:200,height:200,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  }
+  if(!window.QRCode){
+    var s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+    s.onload=renderQR;
+    document.head.appendChild(s);
+  } else {
+    setTimeout(renderQR,100);
+  }
+  var btnEnviar=document.getElementById('btn-enviar-qr');
+  if(btnEnviar) btnEnviar.style.display=pdvNumerosAcomp[r.destino]?'block':'none';
+  document.getElementById('qr-modal').style.display='flex';
+}
+
+function fecharQR(){
+  document.getElementById('qr-modal').style.display='none';
+  document.getElementById('qr-modal-container').innerHTML='';
+  qrAtualItem=null;
+}
+
+async function enviarQRWhatsApp(){
+  if(!qrAtualItem) return;
+  var contato=pdvNumerosAcomp[qrAtualItem.destino];
+  if(!contato){showToast('Número do PDV não cadastrado.','error');return;}
+  var url=BASE_URL+'/bipar.html?c='+qrAtualItem.codigo_bipagem;
+  var msg='📦 *VX Case — QR Code de Recebimento*\n\n'
+    +'🏪 *'+qrAtualItem.destino+'*\n'
+    +'📝 '+qrAtualItem.descricao_item+'\n\n'
+    +'⚠️ *Escaneie o QR Code abaixo ANTES de abrir a embalagem:*\n'
+    +url;
+  try{
+    var numero=contato.numero.includes('@')?contato.numero:contato.numero+'@s.whatsapp.net';
+    await fetch('https://evolution.vxcase.com.br/message/sendText/FARDAMENTOS',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':'B168AAC08A5E-467D-A691-54F427D6D4E8'},
+      body:JSON.stringify({number:numero,text:msg})
+    });
+    showToast('QR enviado para o gestor!','success');
+    fecharQR();
+  }catch(e){showToast('Erro ao enviar.','error');}
+}
+
+async function diagnosticoSync(){
+  try{
+    await carregarTodos();               // garante todoEnvios fresco
+    var d7=new Date(); d7.setDate(d7.getDate()-7);
+    var limiteStr=d7.getFullYear()+'-'+String(d7.getMonth()+1).padStart(2,'0')+'-'+String(d7.getDate()).padStart(2,'0');
+    var pend=todoEnvios.filter(function(r){return r.status_envio==='AGUARDANDO SAÍDA' && !r.rastreio && r.destino && r.data_saida_calculada && r.data_saida_calculada>=limiteStr && r.deleted_at==null;});
+    var linhas=[];
+    linhas.push('PENDENTES (AGUARDANDO SAÍDA, sem rastreio, hoje+): '+pend.length);
+    pend.slice(0,5).forEach(function(r){ linhas.push('  • "'+r.destino+'" saída='+r.data_saida_calculada); });
+
+    var amostra='(sem pendentes p/ testar)';
+    var colunas='—';
+    var heranca='—';
+    if(pend[0]){
+      var d=pend[0].destino, dtp=pend[0].data_saida_calculada;
+      var rCol=await fetch(SB_URL+'/rest/v1/env_envios?select=*&limit=1',{headers:H});
+      var tCol=await rCol.text();
+      try{ var jCol=JSON.parse(tCol); colunas=(jCol[0]?Object.keys(jCol[0]).join(', '):'tabela vazia'); }
+      catch(e){ colunas='ERRO status '+rCol.status+': '+tCol.slice(0,180); }
+      // linha do SUB pendente em env_envios (mesma data): tem grupo? tem rastreio?
+      var rD=await fetch(SB_URL+'/rest/v1/env_envios?select=dest,data,grupo,eh_principal,transp,rastreio&dest=eq.'+encodeURIComponent(d)+'&data=eq.'+dtp+'&limit=5',{headers:H});
+      var tD=await rD.text(); amostra='SUB "'+d+'" ('+dtp+'):\n'+tD.slice(0,400);
+      // tenta descobrir o grupo do sub e buscar a principal desse grupo na mesma data
+      try{
+        var subRows=JSON.parse(tD); var gp=(subRows[0]||{}).grupo;
+        if(gp==null){ heranca='O SUB não tem GRUPO em env_envios nesta data → impossível herdar da principal.'; }
+        else{
+          var rP=await fetch(SB_URL+'/rest/v1/env_envios?select=dest,data,grupo,eh_principal,transp,rastreio&grupo=eq.'+gp+'&data=eq.'+dtp+'&limit=20',{headers:H});
+          var tP=await rP.text(); heranca='grupo do sub='+gp+'\nlinhas do grupo nesta data:\n'+tP.slice(0,500);
+        }
+      }catch(e){ heranca='erro ao apurar herança: '+e; }
+    }
+    await sincronizarRastreios();
+    var dbg=window._syncDebug||{};
+
+    var msg='=== DIAGNÓSTICO ===\n\n'
+      +linhas.join('\n')+'\n\n'
+      +'COLUNAS de env_envios:\n'+colunas+'\n\n'
+      +amostra+'\n\n'
+      +'HERANÇA SUB→PRINCIPAL:\n'+heranca+'\n\n'
+      +'RESULTADO sync:\n'
+      +'etapa='+(dbg.etapa||'?')+' | httpStatus='+(dbg.httpStatus||'?')
+      +' | linhasEnvios='+(dbg.linhasEnvios!=null?dbg.linhasEnvios:'?')
+      +' | casados='+(dbg.casados!=null?dbg.casados:'?')+'\n'
+      +(dbg.corpo?('corpo erro: '+String(dbg.corpo).slice(0,200)):'')
+      +(dbg.erro?('exceção: '+dbg.erro):'');
+    alert(msg);
+  }catch(e){ alert('Falha no diagnóstico: '+e); }
+}
+function toggleTema(){
+  var isLight=document.body.classList.toggle('light-mode');
+  localStorage.setItem('acomp_tema',isLight?'light':'dark');
+}
+var savedTema=localStorage.getItem('acomp_tema')||'dark';
+if(savedTema==='light') document.body.classList.add('light-mode');
+
+window._pdvNumerosProntos=carregarNumerosPDVAcomp();   // o aviso pode sair logo na abertura: enviarWPPAcomp espera isso terminar
+carregarAlertasWpp();
+carregarTodos();
+
+// Realtime
+supa.channel('acompanhar-'+Math.random())
+  .on('postgres_changes',{event:'*',schema:'public',table:'protocolo_envios'},function(){carregarTodos();})
+  .on('postgres_changes',{event:'*',schema:'public',table:'env_envios'},function(){carregarTodos();})
+  .subscribe();
+
+// Rede de segurança: se o realtime de env_envios não estiver publicado, um polling
+// leve garante que o rastreio colado no sistema ENVIOS seja puxado automaticamente.
+setInterval(function(){ sincronizarRastreios(); }, 20000);
+document.addEventListener('visibilitychange',function(){ if(!document.hidden) carregarTodos(); });
+</script>
+</body>
+</html>
